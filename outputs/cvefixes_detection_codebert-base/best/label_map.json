@@ -1,0 +1,8 @@
+{
+  "task": "detection",
+  "num_labels": 2,
+  "id2name": {
+    "0": "safe",
+    "1": "vulnerable"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "task": "classification",
+  "source": "cvefixes",
+  "model": "models\\microsoft__codebert-base",
+  "best_epoch": 1,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 3.771530359983444,
+      "val": {
+        "accuracy": 0.0625,
+        "macro_f1": 0.020814479638009052,
+        "weighted_f1": 0.01730769230769231,
+        "micro_f1": 0.0625,
+        "top3_accuracy": 0.09375
+      }
+    }
+  ],
+  "val": {
+    "accuracy": 0.0625,
+    "macro_f1": 0.020814479638009052,
+    "weighted_f1": 0.01730769230769231,
+    "micro_f1": 0.0625,
+    "top3_accuracy": 0.09375
+  },
+  "test": {
+    "accuracy": 0.0625,
+    "macro_f1": 0.019138755980861243,
+    "weighted_f1": 0.022727272727272728,
+    "micro_f1": 0.0625,
+    "top3_accuracy": 0.0625
+  }
+}
