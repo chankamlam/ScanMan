@@ -17,6 +17,13 @@ dist/
 venv/
 env/
 
+# ---------- Node / 前端（web/ 目录）----------
+# web/ 有自己的 .gitignore，这里再兜一道：node_modules 一旦漏进去
+# 就是几万个文件，事后清理很麻烦。
+node_modules/
+web/dist/
+.vite/
+
 # ---------- 测试与质量工具的缓存 ----------
 # 都是工具自己生成的中间文件，删掉随时能重新跑出来
 .pytest_cache/
@@ -82,6 +89,13 @@ outputs/*/best/tokenizer.json
 outputs/*/*.npy
 # 中间检查点（改回 HF Trainer 的 save_strategy 时会出现），每个约 500 MB
 outputs/*/checkpoint-*/
+
+# 从云端打包带回的产物（.tar.gz 动辄几个 GB）。
+# 里面的内容解开后就是正常的 run 目录，归档本身没必要进版本库。
+*.tar.gz
+*.tar
+*.tgz
+*.zip
 
 # ---------- 模型权重与训练状态（兜底）----------
 # 上面按目录忽略，这里按扩展名兜底，防止换了输出路径就漏进仓库
