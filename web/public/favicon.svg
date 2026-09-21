@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 盾牌：和页面左上角的图标同一个形状 -->
+  <path fill="#1677ff" d="M16 2 28 7v9c0 7-5 12.5-12 14C9 28.5 4 23 4 16V7z"/>
+  <!-- 对勾 -->
+  <path fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"
+        stroke-linejoin="round" d="M10.5 16.5 14.5 20.5 22 12"/>
+</svg>

@@ -1,0 +1,150 @@
+/* ============================================================================
+ * ScanMan — 设计令牌与基础样式
+ *
+ * 设计方向：把扫描报告当作**一份源码清单**来做，而不是"卡片仪表盘"。
+ * 借用的语法全部来自源码文件本身 —— 行号栏、等宽标识符、对齐文字网格的
+ * 细线、一条校准过的严重度刻度。
+ *
+ * 配色刻意避开了三种常见于生成式设计的默认：暖米色+衬线+陶土色、
+ * 近黑底+荧光强调、报纸式细线大排版。这里的基调是**冷灰白的仪器读数纸**，
+ * 唯一的强调色是信号蓝，只在可交互处出现。
+ * ==========================================================================*/
+
+:root {
+  /* ---- 色 ---- */
+  --paper: #eef0ef;      /* 页面底色 */
+  --surface: #ffffff;    /* 面板 */
+  --surface-2: #f7f8f7;  /* 次级面板 / 表头 */
+  --ink: #0f1418;        /* 主文字 */
+  --ink-2: #5a6570;      /* 次要文字 */
+  --ink-3: #949ea6;      /* 弱化文字、行号 */
+  --rule: #d4dad8;       /* 细线 */
+  --rule-soft: #e6eae8;  /* 更浅的分隔 */
+
+  --flag: #b02a1f;       /* 命中 */
+  --flag-bg: #fbeceb;
+  --warn: #b8730f;       /* 中等置信度 */
+  --ok: #2e6b52;         /* 干净 */
+  --ok-bg: #eaf3ee;
+
+  --signal: #1f4fd8;     /* 唯一强调色：链接、选中、焦点 */
+
+  /* ---- 字 ---- */
+  --font-ui: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, 'Cascadia Mono', monospace;
+
+  /* ---- 尺度 ---- */
+  --r: 3px;              /* 圆角刻意做小：这是读数纸，不是气泡 */
+  --gap: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- 等宽记号：所有标识符、路径、数字都用它 ---- */
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1, 'zero' 1;  /* 等宽数字 + 带斜杠的零 */
+}
+
+/* ---- 细横幅：小节标题，全都是大写 + 字距 ---- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---- 面板 ---- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+}
+
+/* ---- 键盘焦点必须看得见（accessibility 底线）---- */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* ---- 尊重"减少动态效果"偏好 ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- 滚动条做细 ---- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8cfcc;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a9b2ae;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---- Prism 主题交给我们的容器控制，去掉它自带的 padding/背景 ---- */
+pre[class*='language-'],
+code[class*='language-'] {
+  background: none;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  text-shadow: none;
+}
+
+/* ---- 覆盖 Ant Design 的默认观感，让它服从上面的令牌 ---- */
+.ant-table {
+  font-family: var(--font-ui);
+}
+.ant-table-thead > tr > th {
+  background: var(--surface-2) !important;
+  border-bottom: 1px solid var(--rule) !important;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3) !important;
+  font-weight: 500 !important;
+}
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--rule-soft) !important;
+}
+.ant-table-tbody > tr:hover > td {
+  background: #f4f7fb !important;
+}
+/* 展开行的背景要能和普通行区分开 */
+.ant-table-expanded-row > td {
+  background: var(--surface-2) !important;
+}

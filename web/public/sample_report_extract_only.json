@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "tool": "scanman",
+  "generated_at": "2026-09-21T20:27:36+08:00",
+  "root": "D:\\Dev\\Projects\\ScanMan\\demo_verified",
+  "checkpoint": null,
+  "threshold": null,
+  "classifier_checkpoint": null,
+  "summary": {
+    "files_scanned": 7,
+    "files_skipped": 0,
+    "functions_total": 16,
+    "functions_suspicious": 0,
+    "functions_classified": 0,
+    "languages": {
+      "c": 16
+    }
+  },
+  "skipped": [],
+  "files": [
+    {
+      "path": "curl.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1206,
+      "function_count": 1,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "pop3_regular_transfer",
+          "start_line": 11,
+          "end_line": 40,
+          "start_byte": 333,
+          "end_byte": 1204,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "jasper.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5782,
+      "function_count": 3,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "jpc_qmfb_split_colgrp",
+          "start_line": 11,
+          "end_line": 91,
+          "start_byte": 351,
+          "end_byte": 2331,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "jpc_qmfb_join_colgrp",
+          "start_line": 94,
+          "end_line": 170,
+          "start_byte": 2390,
+          "end_byte": 4263,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "jpc_qmfb_split_col",
+          "start_line": 173,
+          "end_line": 232,
+          "start_byte": 4322,
+          "end_byte": 5780,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "krb5.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1200,
+      "function_count": 1,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "xdr_nullstring",
+          "start_line": 11,
+          "end_line": 51,
+          "start_byte": 349,
+          "end_byte": 1198,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "libgit2.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 4183,
+      "function_count": 2,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "add_push_report_sideband_pkt",
+          "start_line": 11,
+          "end_line": 70,
+          "start_byte": 352,
+          "end_byte": 1868,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "git_delta_apply",
+          "start_line": 73,
+          "end_line": 162,
+          "start_byte": 1927,
+          "end_byte": 4181,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "linux.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5340,
+      "function_count": 5,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "nested_vmx_load_msr",
+          "start_line": 11,
+          "end_line": 44,
+          "start_byte": 334,
+          "end_byte": 1176,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "userns_install",
+          "start_line": 47,
+          "end_line": 73,
+          "start_byte": 1235,
+          "end_byte": 1882,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "keyring_search",
+          "start_line": 76,
+          "end_line": 105,
+          "start_byte": 1941,
+          "end_byte": 2713,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "common_timer_get",
+          "start_line": 108,
+          "end_line": 156,
+          "start_byte": 2772,
+          "end_byte": 4149,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "__dentry_kill",
+          "start_line": 159,
+          "end_line": 203,
+          "start_byte": 4192,
+          "end_byte": 5338,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "mujs.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1478,
+      "function_count": 1,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ctrycatchfinally",
+          "start_line": 11,
+          "end_line": 42,
+          "start_byte": 349,
+          "end_byte": 1476,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "openssl.c",
+      "language": "c",
+      "parse_ok": false,
+      "num_bytes": 3954,
+      "function_count": 3,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "SRP_VBASE_get_by_user",
+          "start_line": 11,
+          "end_line": 36,
+          "start_byte": 352,
+          "end_byte": 1190,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 46,
+          "end_line": 76,
+          "start_byte": 1433,
+          "end_byte": 2305,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "EVP_EncryptUpdate",
+          "start_line": 79,
+          "end_line": 140,
+          "start_byte": 2364,
+          "end_byte": 3952,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    }
+  ]
+}

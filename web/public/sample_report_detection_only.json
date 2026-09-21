@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "tool": "scanman",
+  "generated_at": "2026-09-21T20:28:08+08:00",
+  "root": "D:\\Dev\\Projects\\ScanMan\\demo_verified",
+  "checkpoint": "outputs/merged_detection_codebert/best",
+  "threshold": 0.6699999999999999,
+  "classifier_checkpoint": null,
+  "summary": {
+    "files_scanned": 7,
+    "files_skipped": 0,
+    "functions_total": 16,
+    "functions_suspicious": 13,
+    "functions_classified": 0,
+    "languages": {
+      "c": 16
+    }
+  },
+  "skipped": [],
+  "files": [
+    {
+      "path": "curl.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1206,
+      "function_count": 1,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "pop3_regular_transfer",
+          "start_line": 11,
+          "end_line": 40,
+          "start_byte": 333,
+          "end_byte": 1204,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "CURLcode pop3_regular_transfer(struct connectdata *conn,\r\n                              bool *dophase_done)\r\n{\r\n  CURLcode result=CURLE_OK;\r\n  bool connected=FALSE;\r\n  struct SessionHandle *data = conn->data;\r\n  data->req.size = -1; /* make sure this is unknown at this point */\r\n\r\n  Curl_pgrsSetUploadCounter(data, 0);\r\n  Curl_pgrsSetDownloadCounter(data, 0);\r\n  Curl_pgrsSetUploadSize(data, 0);\r\n  Curl_pgrsSetDownloadSize(data, 0);\r\n\r\n  result = pop3_perform(conn,\r\n                        &connected, /* have we connected after PASV/PORT */\r\n                        dophase_done); /* all commands in the DO-phase done? */\r\n\r\n  if(CURLE_OK == result) {\r\n\r\n    if(!*dophase_done)\r\n      /* the DO phase has not completed yet */\r\n      return CURLE_OK;\r\n\r\n    result = pop3_dophase_done(conn, connected);\r\n    if(result)\r\n      return result;\r\n  }\r\n\r\n  return result;\r\n}",
+          "verdict": "safe",
+          "confidence": 0.3750998377799988,
+          "prob_vulnerable": 0.6249001622200012
+        }
+      ]
+    },
+    {
+      "path": "jasper.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5782,
+      "function_count": 3,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "jpc_qmfb_split_colgrp",
+          "start_line": 11,
+          "end_line": 91,
+          "start_byte": 351,
+          "end_byte": 2331,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,\r\n  int parity)\r\n{\r\n\r\n\tint bufsize = JPC_CEILDIVPOW2(numrows, 1);\r\n\tjpc_fix_t splitbuf[QMFB_SPLITBUFSIZE * JPC_QMFB_COLGRPSIZE];\r\n\tjpc_fix_t *buf = splitbuf;\r\n\tjpc_fix_t *srcptr;\r\n\tjpc_fix_t *dstptr;\r\n\tregister jpc_fix_t *srcptr2;\r\n\tregister jpc_fix_t *dstptr2;\r\n \tregister int n;\r\n \tregister int i;\r\n \tint m;\r\n\tint hstartcol;\r\n \r\n \t/* Get a buffer. */\r\n \tif (bufsize > QMFB_SPLITBUFSIZE) {\r\n\t\tif (!(buf = jas_alloc2(bufsize, sizeof(jpc_fix_t)))) {\r\n \t\t\t/* We have no choice but to commit suicide in this case. */\r\n \t\t\tabort();\r\n \t\t}\r\n \t}\r\n \r\n \tif (numrows >= 2) {\r\n\t\thstartcol = (numrows + 1 - parity) >> 1;\r\n\t\tm = numrows - hstartcol;\r\n \r\n \t\t/* Save the samples destined for the highpass channel. */\r\n \t\tn = m;\r\n\t\tdstptr = buf;\r\n\t\tsrcptr = &a[(1 - parity) * stride];\r\n\t\twhile (n-- > 0) {\r\n\t\t\tdstptr2 = dstptr;\r\n\t\t\tsrcptr2 = srcptr;\r\n\t\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t\t++dstptr2;\r\n\t\t\t\t++srcptr2;\r\n\t\t\t}\r\n\t\t\tdstptr += JPC_QMFB_COLGRPSIZE;\r\n\t\t\tsrcptr += stride << 1;\r\n\t\t}\r\n\t\t/* Copy the appropriate samples into the lowpass channel. */\r\n\t\tdstptr = &a[(1 - parity) * stride];\r\n\t\tsrcptr = &a[(2 - parity) * stride];\r\n\t\tn = numrows - m - (!parity);\r\n\t\twhile (n-- > 0) {\r\n\t\t\tdstptr2 = dstptr;\r\n\t\t\tsrcptr2 = srcptr;\r\n\t\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t\t++dstptr2;\r\n\t\t\t\t++srcptr2;\r\n\t\t\t}\r\n\t\t\tdstptr += stride;\r\n \t\t\tsrcptr += stride << 1;\r\n \t\t}\r\n \t\t/* Copy the saved samples into the highpass channel. */\r\n\t\tdstptr = &a[hstartcol * stride];\r\n \t\tsrcptr = buf;\r\n \t\tn = m;\r\n \t\twhile (n-- > 0) {\r\n\t\t\tdstptr2 = dstptr;\r\n\t\t\tsrcptr2 = srcptr;\r\n\t\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t\t++dstptr2;\r\n\t\t\t\t++srcptr2;\r\n\t\t\t}\r\n\t\t\tdstptr += stride;\r\n\t\t\tsrcptr += JPC_QMFB_COLGRPSIZE;\r\n\t\t}\r\n\t}\r\n\r\n\t/* If the split buffer was allocated on the heap, free this memory. */\r\n\tif (buf != splitbuf) {\r\n\t\tjas_free(buf);\r\n\t}\r\n\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9010658860206604,
+          "prob_vulnerable": 0.9010658860206604
+        },
+        {
+          "name": "jpc_qmfb_join_colgrp",
+          "start_line": 94,
+          "end_line": 170,
+          "start_byte": 2390,
+          "end_byte": 4263,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride,\r\n  int parity)\r\n{\r\n\r\n\tint bufsize = JPC_CEILDIVPOW2(numrows, 1);\r\n\tjpc_fix_t joinbuf[QMFB_JOINBUFSIZE * JPC_QMFB_COLGRPSIZE];\r\n\tjpc_fix_t *buf = joinbuf;\r\n\tjpc_fix_t *srcptr;\r\n\tjpc_fix_t *dstptr;\r\n\tregister jpc_fix_t *srcptr2;\r\n\tregister jpc_fix_t *dstptr2;\r\n\tregister int n;\r\n\tregister int i;\r\n\tint hstartcol;\r\n \r\n \t/* Allocate memory for the join buffer from the heap. */\r\n \tif (bufsize > QMFB_JOINBUFSIZE) {\r\n\t\tif (!(buf = jas_alloc3(bufsize, JPC_QMFB_COLGRPSIZE, sizeof(jpc_fix_t)))) {\r\n \t\t\t/* We have no choice but to commit suicide. */\r\n \t\t\tabort();\r\n \t\t}\r\n\t}\r\n\r\n\thstartcol = (numrows + 1 - parity) >> 1;\r\n\r\n\t/* Save the samples from the lowpass channel. */\r\n\tn = hstartcol;\r\n\tsrcptr = &a[0];\r\n\tdstptr = buf;\r\n\twhile (n-- > 0) {\r\n\t\tdstptr2 = dstptr;\r\n\t\tsrcptr2 = srcptr;\r\n\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t++dstptr2;\r\n\t\t\t++srcptr2;\r\n\t\t}\r\n\t\tsrcptr += stride;\r\n\t\tdstptr += JPC_QMFB_COLGRPSIZE;\r\n\t}\r\n\t/* Copy the samples from the highpass channel into place. */\r\n\tsrcptr = &a[hstartcol * stride];\r\n\tdstptr = &a[(1 - parity) * stride];\r\n\tn = numrows - hstartcol;\r\n\twhile (n-- > 0) {\r\n\t\tdstptr2 = dstptr;\r\n\t\tsrcptr2 = srcptr;\r\n\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t++dstptr2;\r\n\t\t\t++srcptr2;\r\n\t\t}\r\n\t\tdstptr += 2 * stride;\r\n\t\tsrcptr += stride;\r\n\t}\r\n\t/* Copy the samples from the lowpass channel into place. */\r\n\tsrcptr = buf;\r\n\tdstptr = &a[parity * stride];\r\n\tn = hstartcol;\r\n\twhile (n-- > 0) {\r\n\t\tdstptr2 = dstptr;\r\n\t\tsrcptr2 = srcptr;\r\n\t\tfor (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {\r\n\t\t\t*dstptr2 = *srcptr2;\r\n\t\t\t++dstptr2;\r\n\t\t\t++srcptr2;\r\n\t\t}\r\n\t\tdstptr += 2 * stride;\r\n\t\tsrcptr += JPC_QMFB_COLGRPSIZE;\r\n\t}\r\n\r\n\t/* If the join buffer was allocated on the heap, free this memory. */\r\n\tif (buf != joinbuf) {\r\n\t\tjas_free(buf);\r\n\t}\r\n\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8903048634529114,
+          "prob_vulnerable": 0.8903048634529114
+        },
+        {
+          "name": "jpc_qmfb_split_col",
+          "start_line": 173,
+          "end_line": 232,
+          "start_byte": 4322,
+          "end_byte": 5780,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride,\r\n  int parity)\r\n{\r\n\r\n\tint bufsize = JPC_CEILDIVPOW2(numrows, 1);\r\n\tjpc_fix_t splitbuf[QMFB_SPLITBUFSIZE];\r\n\tjpc_fix_t *buf = splitbuf;\r\n\tregister jpc_fix_t *srcptr;\r\n \tregister jpc_fix_t *dstptr;\r\n \tregister int n;\r\n \tregister int m;\r\n\tint hstartcol;\r\n \r\n \t/* Get a buffer. */\r\n \tif (bufsize > QMFB_SPLITBUFSIZE) {\r\n\t\tif (!(buf = jas_alloc2(bufsize, sizeof(jpc_fix_t)))) {\r\n\t\t\t/* We have no choice but to commit suicide in this case. */\r\n\t\t\tabort();\r\n\t\t}\r\n \t}\r\n \r\n \tif (numrows >= 2) {\r\n\t\thstartcol = (numrows + 1 - parity) >> 1;\r\n\t\tm = numrows - hstartcol;\r\n \r\n \t\t/* Save the samples destined for the highpass channel. */\r\n \t\tn = m;\r\n\t\tdstptr = buf;\r\n\t\tsrcptr = &a[(1 - parity) * stride];\r\n\t\twhile (n-- > 0) {\r\n\t\t\t*dstptr = *srcptr;\r\n\t\t\t++dstptr;\r\n\t\t\tsrcptr += stride << 1;\r\n\t\t}\r\n\t\t/* Copy the appropriate samples into the lowpass channel. */\r\n\t\tdstptr = &a[(1 - parity) * stride];\r\n\t\tsrcptr = &a[(2 - parity) * stride];\r\n\t\tn = numrows - m - (!parity);\r\n\t\twhile (n-- > 0) {\r\n\t\t\t*dstptr = *srcptr;\r\n\t\t\tdstptr += stride;\r\n \t\t\tsrcptr += stride << 1;\r\n \t\t}\r\n \t\t/* Copy the saved samples into the highpass channel. */\r\n\t\tdstptr = &a[hstartcol * stride];\r\n \t\tsrcptr = buf;\r\n \t\tn = m;\r\n \t\twhile (n-- > 0) {\r\n\t\t\t*dstptr = *srcptr;\r\n\t\t\tdstptr += stride;\r\n\t\t\t++srcptr;\r\n\t\t}\r\n\t}\r\n\r\n\t/* If the split buffer was allocated on the heap, free this memory. */\r\n\tif (buf != splitbuf) {\r\n\t\tjas_free(buf);\r\n\t}\r\n\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8927151560783386,
+          "prob_vulnerable": 0.8927151560783386
+        }
+      ]
+    },
+    {
+      "path": "krb5.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1200,
+      "function_count": 1,
+      "suspicious_count": 1,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "xdr_nullstring",
+          "start_line": 11,
+          "end_line": 51,
+          "start_byte": 349,
+          "end_byte": 1198,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "bool_t xdr_nullstring(XDR *xdrs, char **objp)\r\n{\r\n     u_int size;\r\n\r\n     if (xdrs->x_op == XDR_ENCODE) {\r\n\t  if (*objp == NULL)\r\n\t       size = 0;\r\n\t  else\r\n\t       size = strlen(*objp) + 1;\r\n     }\r\n     if (! xdr_u_int(xdrs, &size)) {\r\n\t  return FALSE;\r\n\t}\r\n     switch (xdrs->x_op) {\r\n     case XDR_DECODE:\r\n\t  if (size == 0) {\r\n\t       *objp = NULL;\r\n\t       return TRUE;\r\n\t  } else if (*objp == NULL) {\r\n\t       *objp = (char *) mem_alloc(size);\r\n\t       if (*objp == NULL) {\r\n\t\t    errno = ENOMEM;\r\n \t\t    return FALSE;\r\n \t       }\r\n \t  }\r\n\t  return (xdr_opaque(xdrs, *objp, size));\r\n \r\n      case XDR_ENCODE:\r\n \t  if (size != 0)\r\n\t       return (xdr_opaque(xdrs, *objp, size));\r\n\t  return TRUE;\r\n\r\n     case XDR_FREE:\r\n\t  if (*objp != NULL)\r\n\t       mem_free(*objp, size);\r\n\t  *objp = NULL;\r\n\t  return TRUE;\r\n     }\r\n\r\n     return FALSE;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8363909125328064,
+          "prob_vulnerable": 0.8363909125328064
+        }
+      ]
+    },
+    {
+      "path": "libgit2.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 4183,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "add_push_report_sideband_pkt",
+          "start_line": 11,
+          "end_line": 70,
+          "start_byte": 352,
+          "end_byte": 1868,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int add_push_report_sideband_pkt(git_push *push, git_pkt_data *data_pkt, git_buf *data_pkt_buf)\r\n{\r\n\tgit_pkt *pkt;\r\n\tconst char *line, *line_end;\r\n\tsize_t line_len;\r\n\tint error;\r\n\tint reading_from_buf = data_pkt_buf->size > 0;\r\n\r\n\tif (reading_from_buf) {\r\n\t\t/* We had an existing partial packet, so add the new\r\n\t\t * packet to the buffer and parse the whole thing */\r\n\t\tgit_buf_put(data_pkt_buf, data_pkt->data, data_pkt->len);\r\n\t\tline = data_pkt_buf->ptr;\r\n\t\tline_len = data_pkt_buf->size;\r\n\t}\r\n\telse {\r\n\t\tline = data_pkt->data;\r\n\t\tline_len = data_pkt->len;\r\n\t}\r\n\r\n\twhile (line_len > 0) {\r\n\t\terror = git_pkt_parse_line(&pkt, line, &line_end, line_len);\r\n\r\n\t\tif (error == GIT_EBUFS) {\r\n\t\t\t/* Buffer the data when the inner packet is split\r\n\t\t\t * across multiple sideband packets */\r\n\t\t\tif (!reading_from_buf)\r\n\t\t\t\tgit_buf_put(data_pkt_buf, line, line_len);\r\n\t\t\terror = 0;\r\n\t\t\tgoto done;\r\n\t\t}\r\n\t\telse if (error < 0)\r\n\t\t\tgoto done;\r\n\r\n\t\t/* Advance in the buffer */\r\n \t\tline_len -= (line_end - line);\r\n \t\tline = line_end;\r\n \r\n\t\t/* When a valid packet with no content has been\r\n\t\t * read, git_pkt_parse_line does not report an\r\n\t\t * error, but the pkt pointer has not been set.\r\n\t\t * Handle this by skipping over empty packets.\r\n\t\t */\r\n\t\tif (pkt == NULL)\r\n\t\t\tcontinue;\r\n \t\terror = add_push_report_pkt(push, pkt);\r\n \r\n \t\tgit_pkt_free(pkt);\r\n\r\n\t\tif (error < 0 && error != GIT_ITEROVER)\r\n\t\t\tgoto done;\r\n\t}\r\n\r\n\terror = 0;\r\n\r\ndone:\r\n\tif (reading_from_buf)\r\n\t\tgit_buf_consume(data_pkt_buf, line_end);\r\n\treturn error;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8691421747207642,
+          "prob_vulnerable": 0.8691421747207642
+        },
+        {
+          "name": "git_delta_apply",
+          "start_line": 73,
+          "end_line": 162,
+          "start_byte": 1927,
+          "end_byte": 4181,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int git_delta_apply(\r\n\tvoid **out,\r\n\tsize_t *out_len,\r\n\tconst unsigned char *base,\r\n\tsize_t base_len,\r\n\tconst unsigned char *delta,\r\n\tsize_t delta_len)\r\n{\r\n\tconst unsigned char *delta_end = delta + delta_len;\r\n\tsize_t base_sz, res_sz, alloc_sz;\r\n\tunsigned char *res_dp;\r\n\r\n\t*out = NULL;\r\n\t*out_len = 0;\r\n\r\n\t/*\r\n\t * Check that the base size matches the data we were given;\r\n\t * if not we would underflow while accessing data from the\r\n\t * base object, resulting in data corruption or segfault.\r\n\t */\r\n\tif ((hdr_sz(&base_sz, &delta, delta_end) < 0) || (base_sz != base_len)) {\r\n\t\tgiterr_set(GITERR_INVALID, \"failed to apply delta: base size does not match given data\");\r\n\t\treturn -1;\r\n\t}\r\n\r\n\tif (hdr_sz(&res_sz, &delta, delta_end) < 0) {\r\n\t\tgiterr_set(GITERR_INVALID, \"failed to apply delta: base size does not match given data\");\r\n\t\treturn -1;\r\n\t}\r\n\r\n\tGITERR_CHECK_ALLOC_ADD(&alloc_sz, res_sz, 1);\r\n\tres_dp = git__malloc(alloc_sz);\r\n\tGITERR_CHECK_ALLOC(res_dp);\r\n\r\n\tres_dp[res_sz] = '\\0';\r\n\t*out = res_dp;\r\n\t*out_len = res_sz;\r\n\r\n\twhile (delta < delta_end) {\r\n\t\tunsigned char cmd = *delta++;\r\n\t\tif (cmd & 0x80) {\r\n \t\t\t/* cmd is a copy instruction; copy from the base. */\r\n \t\t\tsize_t off = 0, len = 0;\r\n \r\n\t\t\tif (cmd & 0x01) off = *delta++;\r\n\t\t\tif (cmd & 0x02) off |= *delta++ << 8UL;\r\n\t\t\tif (cmd & 0x04) off |= *delta++ << 16UL;\r\n\t\t\tif (cmd & 0x08) off |= ((unsigned) *delta++ << 24UL);\r\n\t\t\tif (cmd & 0x10) len = *delta++;\r\n\t\t\tif (cmd & 0x20) len |= *delta++ << 8UL;\r\n\t\t\tif (cmd & 0x40) len |= *delta++ << 16UL;\r\n \t\t\tif (!len)       len = 0x10000;\r\n \r\n \t\t\tif (base_len < off + len || res_sz < len)\r\n \t\t\t\tgoto fail;\r\n\t\t\tmemcpy(res_dp, base + off, len);\r\n\t\t\tres_dp += len;\r\n\t\t\tres_sz -= len;\r\n\r\n\t\t} else if (cmd) {\r\n\t\t\t/*\r\n\t\t\t * cmd is a literal insert instruction; copy from\r\n\t\t\t * the delta stream itself.\r\n\t\t\t */\r\n\t\t\tif (delta_end - delta < cmd || res_sz < cmd)\r\n\t\t\t\tgoto fail;\r\n\t\t\tmemcpy(res_dp, delta, cmd);\r\n\t\t\tdelta += cmd;\r\n\t\t\tres_dp += cmd;\r\n\t\t\tres_sz -= cmd;\r\n\r\n\t\t} else {\r\n\t\t\t/* cmd == 0 is reserved for future encodings. */\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t}\r\n\r\n\tif (delta != delta_end || res_sz)\r\n\t\tgoto fail;\r\n\treturn 0;\r\n\r\nfail:\r\n\tgit__free(*out);\r\n\r\n\t*out = NULL;\r\n\t*out_len = 0;\r\n\r\n\tgiterr_set(GITERR_INVALID, \"failed to apply delta\");\r\n\treturn -1;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8473176956176758,
+          "prob_vulnerable": 0.8473176956176758
+        }
+      ]
+    },
+    {
+      "path": "linux.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5340,
+      "function_count": 5,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "nested_vmx_load_msr",
+          "start_line": 11,
+          "end_line": 44,
+          "start_byte": 334,
+          "end_byte": 1176,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static u32 nested_vmx_load_msr(struct kvm_vcpu *vcpu, u64 gpa, u32 count)\r\n{\r\n\tu32 i;\r\n\tstruct vmx_msr_entry e;\r\n\tstruct msr_data msr;\r\n\r\n\tmsr.host_initiated = false;\r\n\tfor (i = 0; i < count; i++) {\r\n\t\tif (kvm_vcpu_read_guest(vcpu, gpa + i * sizeof(e),\r\n\t\t\t\t\t&e, sizeof(e))) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s cannot read MSR entry (%u, 0x%08llx)\\n\",\r\n\t\t\t\t__func__, i, gpa + i * sizeof(e));\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t\tif (nested_vmx_load_msr_check(vcpu, &e)) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s check failed (%u, 0x%x, 0x%x)\\n\",\r\n\t\t\t\t__func__, i, e.index, e.reserved);\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t\tmsr.index = e.index;\r\n\t\tmsr.data = e.value;\r\n\t\tif (kvm_set_msr(vcpu, &msr)) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s cannot write MSR (%u, 0x%x, 0x%llx)\\n\",\r\n\t\t\t\t__func__, i, e.index, e.value);\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t}\r\n\treturn 0;\r\nfail:\r\n\treturn i + 1;\r\n}",
+          "verdict": "safe",
+          "confidence": 0.5921000838279724,
+          "prob_vulnerable": 0.4078999161720276
+        },
+        {
+          "name": "userns_install",
+          "start_line": 47,
+          "end_line": 73,
+          "start_byte": 1235,
+          "end_byte": 1882,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int userns_install(struct nsproxy *nsproxy, void *ns)\r\n{\r\n\tstruct user_namespace *user_ns = ns;\r\n\tstruct cred *cred;\r\n\r\n\t/* Don't allow gaining capabilities by reentering\r\n\t * the same user namespace.\r\n\t */\r\n\tif (user_ns == current_user_ns())\r\n\t\treturn -EINVAL;\r\n\r\n\t/* Threaded processes may not enter a different user namespace */\r\n \tif (atomic_read(&current->mm->mm_users) > 1)\r\n \t\treturn -EINVAL;\r\n \r\n \tif (!ns_capable(user_ns, CAP_SYS_ADMIN))\r\n \t\treturn -EPERM;\r\n \r\n\tcred = prepare_creds();\r\n\tif (!cred)\r\n\t\treturn -ENOMEM;\r\n\r\n\tput_user_ns(cred->user_ns);\r\n\tset_cred_user_ns(cred, get_user_ns(user_ns));\r\n\r\n\treturn commit_creds(cred);\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8674373030662537,
+          "prob_vulnerable": 0.8674373030662537
+        },
+        {
+          "name": "keyring_search",
+          "start_line": 76,
+          "end_line": 105,
+          "start_byte": 1941,
+          "end_byte": 2713,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "key_ref_t keyring_search(key_ref_t keyring,\r\n\t\t\t struct key_type *type,\r\n\t\t\t const char *description)\r\n{\r\n\tstruct keyring_search_context ctx = {\r\n \t\t.index_key.type\t\t= type,\r\n \t\t.index_key.description\t= description,\r\n \t\t.cred\t\t\t= current_cred(),\r\n\t\t.match_data.cmp\t\t= type->match,\r\n \t\t.match_data.raw_data\t= description,\r\n \t\t.match_data.lookup_type\t= KEYRING_SEARCH_LOOKUP_DIRECT,\r\n \t\t.flags\t\t\t= KEYRING_SEARCH_DO_STATE_CHECK,\r\n \t};\r\n \tkey_ref_t key;\r\n \tint ret;\r\n \r\n\tif (!ctx.match_data.cmp)\r\n\t\treturn ERR_PTR(-ENOKEY);\r\n \tif (type->match_preparse) {\r\n \t\tret = type->match_preparse(&ctx.match_data);\r\n \t\tif (ret < 0)\r\n\t\t\treturn ERR_PTR(ret);\r\n\t}\r\n\r\n\tkey = keyring_search_aux(keyring, &ctx);\r\n\r\n\tif (type->match_free)\r\n\t\ttype->match_free(&ctx.match_data);\r\n\treturn key;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9093014597892761,
+          "prob_vulnerable": 0.9093014597892761
+        },
+        {
+          "name": "common_timer_get",
+          "start_line": 108,
+          "end_line": 156,
+          "start_byte": 2772,
+          "end_byte": 4149,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void common_timer_get(struct k_itimer *timr, struct itimerspec64 *cur_setting)\r\n{\r\n\tconst struct k_clock *kc = timr->kclock;\r\n\tktime_t now, remaining, iv;\r\n \tstruct timespec64 ts64;\r\n \tbool sig_none;\r\n \r\n\tsig_none = (timr->it_sigev_notify & ~SIGEV_THREAD_ID) == SIGEV_NONE;\r\n \tiv = timr->it_interval;\r\n \r\n \t/* interval timer ? */\r\n\tif (iv) {\r\n\t\tcur_setting->it_interval = ktime_to_timespec64(iv);\r\n\t} else if (!timr->it_active) {\r\n\t\t/*\r\n\t\t * SIGEV_NONE oneshot timers are never queued. Check them\r\n\t\t * below.\r\n\t\t */\r\n\t\tif (!sig_none)\r\n\t\t\treturn;\r\n\t}\r\n\r\n\t/*\r\n\t * The timespec64 based conversion is suboptimal, but it's not\r\n\t * worth to implement yet another callback.\r\n\t */\r\n\tkc->clock_get(timr->it_clock, &ts64);\r\n\tnow = timespec64_to_ktime(ts64);\r\n\r\n\t/*\r\n\t * When a requeue is pending or this is a SIGEV_NONE timer move the\r\n\t * expiry time forward by intervals, so expiry is > now.\r\n\t */\r\n\tif (iv && (timr->it_requeue_pending & REQUEUE_PENDING || sig_none))\r\n\t\ttimr->it_overrun += kc->timer_forward(timr, now);\r\n\r\n\tremaining = kc->timer_remaining(timr, now);\r\n\t/* Return 0 only, when the timer is expired and not pending */\r\n\tif (remaining <= 0) {\r\n\t\t/*\r\n\t\t * A single shot SIGEV_NONE timer must return 0, when\r\n\t\t * it is expired !\r\n\t\t */\r\n\t\tif (!sig_none)\r\n\t\t\tcur_setting->it_value.tv_nsec = 1;\r\n\t} else {\r\n\t\tcur_setting->it_value = ktime_to_timespec64(remaining);\r\n\t}\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.7882516384124756,
+          "prob_vulnerable": 0.7882516384124756
+        },
+        {
+          "name": "__dentry_kill",
+          "start_line": 159,
+          "end_line": 203,
+          "start_byte": 4192,
+          "end_byte": 5338,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static void __dentry_kill(struct dentry *dentry)\r\n{\r\n\tstruct dentry *parent = NULL;\r\n\tbool can_free = true;\r\n\tif (!IS_ROOT(dentry))\r\n\t\tparent = dentry->d_parent;\r\n\r\n\t/*\r\n\t * The dentry is now unrecoverably dead to the world.\r\n\t */\r\n\tlockref_mark_dead(&dentry->d_lockref);\r\n\r\n\t/*\r\n\t * inform the fs via d_prune that this dentry is about to be\r\n\t * unhashed and destroyed.\r\n\t */\r\n\tif (dentry->d_flags & DCACHE_OP_PRUNE)\r\n\t\tdentry->d_op->d_prune(dentry);\r\n\r\n\tif (dentry->d_flags & DCACHE_LRU_LIST) {\r\n\t\tif (!(dentry->d_flags & DCACHE_SHRINK_LIST))\r\n\t\t\td_lru_del(dentry);\r\n\t}\r\n\t/* if it was on the hash then remove it */\r\n\t__d_drop(dentry);\r\n\tdentry_unlist(dentry, parent);\r\n\tif (parent)\r\n\t\tspin_unlock(&parent->d_lock);\r\n\tif (dentry->d_inode)\r\n\t\tdentry_unlink_inode(dentry);\r\n\telse\r\n\t\tspin_unlock(&dentry->d_lock);\r\n\tthis_cpu_dec(nr_dentry);\r\n\tif (dentry->d_op && dentry->d_op->d_release)\r\n\t\tdentry->d_op->d_release(dentry);\r\n\r\n\tspin_lock(&dentry->d_lock);\r\n\tif (dentry->d_flags & DCACHE_SHRINK_LIST) {\r\n\t\tdentry->d_flags |= DCACHE_MAY_FREE;\r\n\t\tcan_free = false;\r\n\t}\r\n\tspin_unlock(&dentry->d_lock);\r\n\tif (likely(can_free))\r\n\t\tdentry_free(dentry);\r\n}",
+          "verdict": "safe",
+          "confidence": 0.5194982290267944,
+          "prob_vulnerable": 0.48050177097320557
+        }
+      ]
+    },
+    {
+      "path": "mujs.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1478,
+      "function_count": 1,
+      "suspicious_count": 1,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ctrycatchfinally",
+          "start_line": 11,
+          "end_line": 42,
+          "start_byte": 349,
+          "end_byte": 1476,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm, js_Ast *finallystm)\r\n{\r\n\tint L1, L2, L3;\r\n\tL1 = emitjump(J, F, OP_TRY);\r\n\t{\r\n\t\t/* if we get here, we have caught an exception in the try block */\r\n\t\tL2 = emitjump(J, F, OP_TRY);\r\n\t\t{\r\n\t\t\t/* if we get here, we have caught an exception in the catch block */\r\n\t\t\tcstm(J, F, finallystm); /* inline finally block */\r\n\t\t\temit(J, F, OP_THROW); /* rethrow exception */\r\n\t\t}\r\n\t\tlabel(J, F, L2);\r\n\t\tif (F->strict) {\r\n\t\t\tcheckfutureword(J, F, catchvar);\r\n\t\t\tif (!strcmp(catchvar->string, \"arguments\"))\r\n\t\t\t\tjsC_error(J, catchvar, \"redefining 'arguments' is not allowed in strict mode\");\r\n\t\t\tif (!strcmp(catchvar->string, \"eval\"))\r\n\t\t\t\tjsC_error(J, catchvar, \"redefining 'eval' is not allowed in strict mode\");\r\n\t\t}\r\n\t\temitline(J, F, catchvar);\r\n \t\temitstring(J, F, OP_CATCH, catchvar->string);\r\n \t\tcstm(J, F, catchstm);\r\n \t\temit(J, F, OP_ENDCATCH);\r\n \t\tL3 = emitjump(J, F, OP_JUMP); /* skip past the try block to the finally block */\r\n \t}\r\n \tlabel(J, F, L1);\r\n\tcstm(J, F, trystm);\r\n\temit(J, F, OP_ENDTRY);\r\n\tlabel(J, F, L3);\r\n\tcstm(J, F, finallystm);\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.916889488697052,
+          "prob_vulnerable": 0.916889488697052
+        }
+      ]
+    },
+    {
+      "path": "openssl.c",
+      "language": "c",
+      "parse_ok": false,
+      "num_bytes": 3954,
+      "function_count": 3,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "SRP_VBASE_get_by_user",
+          "start_line": 11,
+          "end_line": 36,
+          "start_byte": 352,
+          "end_byte": 1190,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "SRP_user_pwd *SRP_VBASE_get_by_user(SRP_VBASE *vb, char *username)\r\n {\r\n     int i;\r\n     SRP_user_pwd *user;\r\n    unsigned char digv[SHA_DIGEST_LENGTH];\r\n    unsigned char digs[SHA_DIGEST_LENGTH];\r\n    EVP_MD_CTX ctxt;\r\n \r\n     if (vb == NULL)\r\n         return NULL;\r\n     for (i = 0; i < sk_SRP_user_pwd_num(vb->users_pwd); i++) {\r\n         user = sk_SRP_user_pwd_value(vb->users_pwd, i);\r\n         if (strcmp(user->id, username) == 0)\r\n             return user;\r\n     }\r\n     if ((vb->seed_key == NULL) ||\r\n         (vb->default_g == NULL) || (vb->default_N == NULL))\r\n         return NULL;\r\n        if (!(len = t_fromb64(tmp, N)))\r\n            goto err;\r\n        N_bn = BN_bin2bn(tmp, len, NULL);\r\n        if (!(len = t_fromb64(tmp, g)))\r\n            goto err;\r\n        g_bn = BN_bin2bn(tmp, len, NULL);\r\n        defgNid = \"*\";\r\n    }",
+          "verdict": "vulnerable",
+          "confidence": 0.8725183606147766,
+          "prob_vulnerable": 0.8725183606147766
+        },
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 46,
+          "end_line": 76,
+          "start_byte": 1433,
+          "end_byte": 2305,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ssl_scan_clienthello_custom_tlsext(SSL *s,\r\n                                              const unsigned char *data,\r\n                                              const unsigned char *limit,\r\n                                              int *al)\r\n{\r\n    unsigned short type, size, len;\r\n    /* If resumed session or no custom extensions nothing to do */\r\n     if (s->hit || s->cert->srv_ext.meths_count == 0)\r\n         return 1;\r\n \r\n    if (data >= limit - 2)\r\n         return 1;\r\n     n2s(data, len);\r\n \r\n    if (data > limit - len)\r\n         return 1;\r\n \r\n    while (data <= limit - 4) {\r\n         n2s(data, type);\r\n         n2s(data, size);\r\n \r\n        if (data + size > limit)\r\n             return 1;\r\n         if (custom_ext_parse(s, 1 /* server */ , type, data, size, al) <= 0)\r\n             return 0;\r\n\r\n        data += size;\r\n    }\r\n\r\n    return 1;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8563587665557861,
+          "prob_vulnerable": 0.8563587665557861
+        },
+        {
+          "name": "EVP_EncryptUpdate",
+          "start_line": 79,
+          "end_line": 140,
+          "start_byte": 2364,
+          "end_byte": 3952,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,\r\n                      const unsigned char *in, int inl)\r\n{\r\n    int i, j, bl;\r\n\r\n    if (ctx->cipher->flags & EVP_CIPH_FLAG_CUSTOM_CIPHER) {\r\n        i = ctx->cipher->do_cipher(ctx, out, in, inl);\r\n        if (i < 0)\r\n            return 0;\r\n        else\r\n            *outl = i;\r\n        return 1;\r\n    }\r\n\r\n    if (inl <= 0) {\r\n        *outl = 0;\r\n        return inl == 0;\r\n    }\r\n\r\n    if (ctx->buf_len == 0 && (inl & (ctx->block_mask)) == 0) {\r\n        if (ctx->cipher->do_cipher(ctx, out, in, inl)) {\r\n            *outl = inl;\r\n            return 1;\r\n        } else {\r\n            *outl = 0;\r\n            return 0;\r\n        }\r\n    }\r\n    i = ctx->buf_len;\r\n     bl = ctx->cipher->block_size;\r\n     OPENSSL_assert(bl <= (int)sizeof(ctx->buf));\r\n     if (i != 0) {\r\n        if (i + inl < bl) {\r\n             memcpy(&(ctx->buf[i]), in, inl);\r\n             ctx->buf_len += inl;\r\n             *outl = 0;\r\n            return 1;\r\n        } else {\r\n            j = bl - i;\r\n            memcpy(&(ctx->buf[i]), in, j);\r\n            if (!ctx->cipher->do_cipher(ctx, out, ctx->buf, bl))\r\n                return 0;\r\n            inl -= j;\r\n            in += j;\r\n            out += bl;\r\n            *outl = bl;\r\n        }\r\n    } else\r\n        *outl = 0;\r\n    i = inl & (bl - 1);\r\n    inl -= i;\r\n    if (inl > 0) {\r\n        if (!ctx->cipher->do_cipher(ctx, out, in, inl))\r\n            return 0;\r\n        *outl += inl;\r\n    }\r\n\r\n    if (i != 0)\r\n        memcpy(ctx->buf, &(in[inl]), i);\r\n    ctx->buf_len = i;\r\n    return 1;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8644980192184448,
+          "prob_vulnerable": 0.8644980192184448
+        }
+      ]
+    }
+  ]
+}

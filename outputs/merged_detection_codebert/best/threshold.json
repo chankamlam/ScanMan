@@ -1,0 +1,11 @@
+{
+  "threshold": 0.6699999999999999,
+  "criterion": "f1",
+  "target_recall": null,
+  "tuned_on": "val",
+  "recall": 0.5914691943127962,
+  "precision": 0.45875606528451696,
+  "f1": 0.5167273931765485,
+  "fn": 2155,
+  "fp": 3681
+}

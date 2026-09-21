@@ -1,0 +1,98 @@
+[
+  {
+    "file": "openssl.c",
+    "function": "SRP_VBASE_get_by_user",
+    "truth": "vulnerable",
+    "cwe": "CWE-399"
+  },
+  {
+    "file": "openssl.c",
+    "function": "ssl_scan_clienthello_custom_tlsext",
+    "truth": "vulnerable",
+    "cwe": "CWE-190"
+  },
+  {
+    "file": "openssl.c",
+    "function": "EVP_EncryptUpdate",
+    "truth": "vulnerable",
+    "cwe": "CWE-189"
+  },
+  {
+    "file": "linux.c",
+    "function": "nested_vmx_load_msr",
+    "truth": "safe",
+    "cwe": ""
+  },
+  {
+    "file": "linux.c",
+    "function": "userns_install",
+    "truth": "vulnerable",
+    "cwe": "CWE-264"
+  },
+  {
+    "file": "linux.c",
+    "function": "keyring_search",
+    "truth": "vulnerable",
+    "cwe": "CWE-476"
+  },
+  {
+    "file": "linux.c",
+    "function": "common_timer_get",
+    "truth": "vulnerable",
+    "cwe": "CWE-125"
+  },
+  {
+    "file": "linux.c",
+    "function": "__dentry_kill",
+    "truth": "safe",
+    "cwe": ""
+  },
+  {
+    "file": "libgit2.c",
+    "function": "add_push_report_sideband_pkt",
+    "truth": "vulnerable",
+    "cwe": "CWE-476"
+  },
+  {
+    "file": "libgit2.c",
+    "function": "git_delta_apply",
+    "truth": "vulnerable",
+    "cwe": "CWE-125"
+  },
+  {
+    "file": "mujs.c",
+    "function": "ctrycatchfinally",
+    "truth": "vulnerable",
+    "cwe": "CWE-119"
+  },
+  {
+    "file": "jasper.c",
+    "function": "jpc_qmfb_split_colgrp",
+    "truth": "vulnerable",
+    "cwe": "CWE-119"
+  },
+  {
+    "file": "jasper.c",
+    "function": "jpc_qmfb_join_colgrp",
+    "truth": "vulnerable",
+    "cwe": "CWE-119"
+  },
+  {
+    "file": "jasper.c",
+    "function": "jpc_qmfb_split_col",
+    "truth": "vulnerable",
+    "cwe": "CWE-119"
+  },
+  {
+    "file": "krb5.c",
+    "function": "xdr_nullstring",
+    "truth": "vulnerable",
+    "cwe": "CWE-119"
+  },
+  {
+    "file": "curl.c",
+    "function": "pop3_regular_transfer",
+    "truth": "safe",
+    "cwe": ""
+  }
+]

@@ -1,0 +1,12 @@
+# 依赖：装一次就有，不进版本库
+node_modules/
+
+# 构建产物：npm run build 生成
+dist/
+
+# Vite 的缓存
+.vite/
+*.tsbuildinfo
+
+# 本地调试的日志
+*.log
