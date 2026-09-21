@@ -193,9 +193,11 @@ def main() -> None:
                 print(f"{t:>6.2f}{m['precision']:>11.4f}{m['recall']:>9.4f}"
                       f"{m['f1']:>9.4f}{m['fn']:>8}{m['fp']:>8}")
     else:
-        metrics = compute_multiclass_metrics(y, logits, top_k=min(3, predictor.num_labels))
+        # 不传 top_k，用默认的 (3, 5)：Top-5 是分类任务的主指标（见 docs/07 4.3）
+        metrics = compute_multiclass_metrics(y, logits)
         print("-" * 62)
-        for k in ("accuracy", "macro_f1", "weighted_f1", "micro_f1", "top3_accuracy"):
+        for k in ("accuracy", "macro_f1", "weighted_f1", "micro_f1",
+                  "top3_accuracy", "top5_accuracy"):
             if k in metrics:
                 print(f"{k:<14}{metrics[k]:.4f}")
         names = [predictor.id2name.get(i, str(i)) for i in range(predictor.num_labels)]

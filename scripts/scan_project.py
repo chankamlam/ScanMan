@@ -21,6 +21,20 @@
     python scripts/scan_project.py . --checkpoint <ckpt> --outer-only \
         --skip-dir tests --no-code --output outputs/scan_result.json
 
+    # 两级级联：检测命中后，再判断"是哪一类 CWE"（需要两个模型）
+    python scripts/scan_project.py . \
+        --checkpoint outputs/<检测run>/best \
+        --classifier outputs/<分类run>/best
+
+两级级联
+--------
+``--checkpoint``（检测）与 ``--classifier``（分类）是**两个独立的模型**，
+必须分开传，不能共用一个参数：``VulnPredictor`` 一个实例只能是一个任务，
+而检测检查点跑到这里会被下面的任务校验直接拒掉。
+
+第二级**只对检测命中的函数跑**，理由见 ``run_classification`` 的 docstring ——
+简言之，分类数据里没有"安全"这一类，拿安全函数去分类只会得到噪声。
+
 关于截断（重要）
 ----------------
 **不要在这里再截断代码**。推理器的 ``predict_probs`` 内部已经对每条输入调过
@@ -225,6 +239,62 @@ def run_inference(
     return verdicts
 
 
+def run_classification(
+    classifier,
+    file_results: list[dict],
+    verdicts: dict[tuple[int, int], dict],
+    batch_size: int,
+) -> dict[tuple[int, int], dict]:
+    """第二级：对**检测命中**的函数跑分类，给出 CWE 类别。
+
+    参数
+    ----
+    classifier : VulnPredictor
+        已加载的推理器（``task`` 必须为 ``classification``）。
+    file_results, verdicts : 第一级的产物
+        只有 ``verdicts`` 里判定为 ``vulnerable`` 的函数才会被送进来。
+    batch_size : int
+        推理批大小。
+
+    返回
+    ----
+    dict[tuple[int, int], dict]
+        ``{(文件下标, 函数下标): 分类结果}``，**只包含真正跑过分类的项**。
+
+    为什么只对命中函数跑（docs/07 3.2）
+    -----------------------------------
+    1. **数据决定了不能喂安全函数**：分类训练数据全部取自漏洞样本
+       （``build_dataset.py`` 只取 ``label==1`` 且有 ``cwe`` 的），
+       类别里**没有"安全"这一项**。拿安全函数去分类，等于逼模型在 27 个
+       CWE 里硬挑一个 —— 结果必然是噪声，而且长得和真结果一模一样，
+       审查的人根本分不出来。
+    2. **省算力**：真实仓库的命中率通常远小于 1，逐函数跑两个模型纯属浪费。
+
+    这也和 ``build_report`` 里的写入条件严格对应：``cwe`` 只会出现在
+    ``verdict == "vulnerable"`` 的函数节点上。
+    """
+    from tqdm import tqdm
+
+    items: list[tuple[int, int, str]] = [
+        (fi, gi, f.code)
+        for fi, fr in enumerate(file_results)
+        for gi, f in enumerate(fr["functions"])
+        if verdicts.get((fi, gi), {}).get("verdict") == "vulnerable"
+    ]
+    # 一个命中的都没有就别进模型：predict([]) 会一路走到 tokenizer 和前向，
+    # 白白吃一次空 batch（run_inference 里同样的守卫）
+    if not items:
+        return {}
+
+    results: dict[tuple[int, int], dict] = {}
+    for i in tqdm(range(0, len(items), batch_size), desc="分类", unit="batch"):
+        chunk = items[i:i + batch_size]
+        preds = classifier.predict([code for _, _, code in chunk])
+        for (fi, gi, _), pred in zip(chunk, preds):
+            results[(fi, gi)] = pred
+    return results
+
+
 def build_report(
     root: Path,
     file_results: list[dict],
@@ -233,6 +303,8 @@ def build_report(
     threshold: float | None,
     include_code: bool,
     verdicts: dict[tuple[int, int], dict],
+    classifications: dict[tuple[int, int], dict] | None = None,
+    classifier_checkpoint: str | None = None,
 ) -> dict:
     """把扫描结果组装成可 JSON 序列化的报告。
 
@@ -241,10 +313,18 @@ def build_report(
 
     路径一律用 POSIX 风格的**相对路径**（``as_posix()``）：报告要能在
     Windows 上生成、在 Linux CI 里比对，绝对路径和反斜杠都不满足这个要求。
+
+    两级级联（见 docs/07 第三节）
+    -----------------------------
+    ``verdicts`` 是第一级（检测）的结果，``classifications`` 是第二级的结果，
+    后者只对**检测命中**的函数存在。两者都是"有就写、没有就不写"的**可选**
+    字段：没跑推理的报告不会冒出一个 ``verdict: null``，没跑分类的报告也不会
+    冒出一个 ``cwe: null`` —— 否则消费方会把它误读成"模型判定为安全/无类别"。
     """
     languages: dict[str, int] = {}
     functions_total = 0
     suspicious_total = 0
+    classified_total = 0
 
     out_files = []
     for fi, fr in enumerate(file_results):
@@ -263,6 +343,14 @@ def build_report(
                 d["prob_vulnerable"] = float(pred["prob_vulnerable"])
                 if pred["verdict"] == "vulnerable":
                     file_suspicious += 1
+                    # 第二级（分类）只在检测命中时才可能有过结果。
+                    # 注意 predict.py 返回的键叫 ``topk``，报告里叫 ``cwe_topk``
+                    # —— 换个更明确的名字，免得消费方以为它是通用的 top-k。
+                    cls = (classifications or {}).get((fi, gi))
+                    if cls is not None:
+                        d["cwe"] = cls["cwe"]
+                        d["cwe_topk"] = cls["topk"]
+                        classified_total += 1
             # 没给 checkpoint 时**不写** verdict 字段，避免报告里出现
             # "verdict: null" 这种容易被误读成"模型判定为安全"的歧义
             out_funcs.append(d)
@@ -286,11 +374,15 @@ def build_report(
         "root": str(root),
         "checkpoint": checkpoint,
         "threshold": threshold,
+        # 只增不改：新键，不影响老消费方；没跑分类时为 null
+        "classifier_checkpoint": classifier_checkpoint,
         "summary": {
             "files_scanned": len(out_files),
             "files_skipped": len(skipped),
             "functions_total": functions_total,
             "functions_suspicious": suspicious_total,
+            # 跑过分类的函数数（= 命中函数里成功拿到 CWE 的那些）
+            "functions_classified": classified_total,
             "languages": languages,
         },
         "skipped": skipped,
@@ -314,6 +406,11 @@ def print_summary(report: dict, top_n: int = 10) -> None:
         print(f"  判定阈值   : {report['threshold']:.4f}")
         print(f"  可疑函数   : {human_int(s['functions_suspicious'])} 个"
               f"（占 {s['functions_suspicious'] / max(s['functions_total'], 1):.1%}）")
+        # "只增不改"：老报告里没有这两个键，用 .get 兜底，不要让旧报告打不出来
+        if report.get("classifier_checkpoint"):
+            print(f"  分类器     : {report['classifier_checkpoint']}")
+            print(f"  已分类     : {human_int(s.get('functions_classified', 0))} 个"
+                  f"（命中函数的 CWE 结果）")
     else:
         print("  推理       : 未启用（未提供 --checkpoint，只做函数抽取）")
     if s["languages"]:
@@ -333,8 +430,11 @@ def print_summary(report: dict, top_n: int = 10) -> None:
             print()
             print(f"  最可疑的 {min(top_n, len(cands))} 个函数：")
             for prob, path, f in cands[:top_n]:
+                # 跑过分类就有 cwe 字段，没有就不显示 —— 不留空位
+                cwe = f.get("cwe")
+                cwe_col = f"  {cwe:<10}" if cwe else ""
                 print(f"    {path}:{f['start_line']:<6} {f['name']:<32} "
-                      f"conf={prob:.3f}")
+                      f"conf={prob:.3f}{cwe_col}")
 
     if report["skipped"]:
         print()
@@ -359,6 +459,9 @@ def main() -> int:
                         help="报告输出路径（相对路径按项目根目录解析）")
     parser.add_argument("--checkpoint", default=None,
                         help="微调后的检测模型目录；不给则只抽取不推理")
+    parser.add_argument("--classifier", default=None,
+                        help="微调后的分类模型目录。给定时对**检测命中**的函数"
+                             "再跑一级 CWE 分类，报告里多出 cwe/cwe_topk 字段")
     parser.add_argument("--device", default=None, help="cpu | cuda | cuda:1")
     parser.add_argument("--batch-size", type=int, default=16, help="推理批大小")
     parser.add_argument("--threshold", type=float, default=None,
@@ -425,10 +528,36 @@ def main() -> int:
         n_susp = sum(1 for v in verdicts.values() if v["verdict"] == "vulnerable")
         log.info("推理完成：可疑函数 %s 个", human_int(n_susp))
 
+    # ---- 3b. 第二级分类（可选，必须有检测结果才有意义） ----
+    classifications: dict[tuple[int, int], dict] = {}
+    if args.classifier:
+        if not args.checkpoint:
+            # 级联的前提是"检测先命中"。没有第一级就没有命中集合，
+            # 硬跑分类只能把所有函数都当可疑喂进去 —— 那正是要避免的用法。
+            log.error("--classifier 需要配合 --checkpoint 一起用："
+                      "分类只对检测命中的函数跑，没有检测结果就没有命中集合。")
+            return 2
+        from scripts.predict import VulnPredictor  # 延迟导入：不推理时不需要 torch
+
+        classifier = VulnPredictor(args.classifier, device=args.device)
+        if classifier.task != "classification":
+            log.error("--classifier 指向的检查点任务是 %r，不是 classification。",
+                      classifier.task)
+            return 2
+        log.info("分类器加载完成 | 设备=%s | 类别数=%d",
+                 classifier.device, classifier.num_labels)
+
+        classifications = run_classification(
+            classifier, file_results, verdicts, args.batch_size
+        )
+        log.info("分类完成：%s 个命中函数给出了 CWE 类别", human_int(len(classifications)))
+
     # ---- 4. 写报告 ----
     report = build_report(root, file_results, skipped, args.checkpoint,
                           threshold, include_code=not args.no_code,
-                          verdicts=verdicts)
+                          verdicts=verdicts,
+                          classifications=classifications,
+                          classifier_checkpoint=args.classifier)
     out_path = resolve_path(args.output)
     ensure_dir(out_path.parent)
     # ensure_ascii=False：中文注释/路径按原样写，人也能直接读

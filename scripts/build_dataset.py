@@ -5,11 +5,18 @@
 
 支持数据源
 ----------
-cvefixes    CVEfixes 1.0.8 函数级衍生版（13k CVE，含 vulnerable_code / fixed_code / cwe_id）
+============  ================================================================
+cvefixes      CVEfixes 1.0.8 函数级衍生版（13k CVE，27 种语言）
+bigvul        BigVul，C/C++ 函数级，带 CWE；标签噪声是文献公认的问题
+diversevul    DiverseVul，C/C++ 函数级，项目覆盖面比 BigVul 广得多
+codexglue     CodeXGLUE defect detection（Devign），C/C++ 函数级
+merged        上述四源合并去重（推荐用于单语言场景，见 build_merged 的说明）
+============  ================================================================
 
-本项目只用 CVEfixes 一个数据源。若以后要接入别的数据集，在下面的
-``BUILDERS`` 里注册一个新的构建器即可，其余流程（过滤 / 截断 / 去重 /
-分组划分 / 标签编码）都是数据源无关的。
+原始数据用 ``scripts/download_data.py --datasets <名字>`` 下载。
+
+接入新数据集：在下面的 ``BUILDERS`` 里注册一个构建器即可，其余流程
+（过滤 / 截断 / 去重 / 分组划分 / 标签编码）都是数据源无关的。
 
 处理流程（6 步）
 ----------------
@@ -274,8 +281,172 @@ def build_cvefixes(raw_dir: Path, cfg: dict) -> Iterator[dict]:
                 }
 
 
+def build_bigvul(raw_dir: Path, cfg: dict) -> Iterator[dict]:
+    """BigVul：按 ``vul`` 字段区分漏洞函数与安全函数。
+
+    参数
+    ----
+    raw_dir : Path
+        原始数据根目录。
+    cfg : dict
+        完整配置。
+
+    返回
+    ----
+    Iterator[dict]
+
+    BigVul 的标签语义
+    -----------------
+    BigVul 的每个 CVE 修复提交里包含两类函数：
+
+        vul=1  这个函数就是被修复的漏洞函数
+               → func_before（修复前）是漏洞  → label=1
+               → func_after （修复后）是安全的 → label=0（难负样本）
+
+        vul=0  同一提交里跟漏洞无关的其他函数（只是碰巧一起改了）
+               → 视为安全函数 → label=0
+
+    为什么要把 func_after 也加进来
+    ------------------------------
+    漏洞版本和修复版本只差几行，是一对"极难的负样本"。
+    模型必须学会分辨这细小的差异，而不是靠"这段代码看起来像不像
+    有漏洞的样子"来蒙。加入后模型的判别能力会明显提升。
+
+    注意：BigVul 里 vul=0 的函数数量远多于 vul=1（约 16:1），
+    类别极度不平衡，训练时建议开 ``imbalance: weighted_loss``。
+    """
+    mapping = {"train": "train.parquet", "val": "val.parquet", "test": "test.parquet"}
+    # BigVul 的列名带空格和大小写，照抄原始字段名
+    cols = ["CVE ID", "CWE ID", "func_before", "func_after", "vul", "lang", "project", "commit_id"]
+    for split, fname in mapping.items():
+        fp = raw_dir / "bigvul" / fname
+        if not fp.exists():
+            log.warning("缺少 BigVul 文件: %s", fp)
+            continue
+        for row in _iter_parquet_rows(fp, cols):
+            cwe = _norm_cwe(row.get("CWE ID"))
+            lang = (row.get("lang") or "").strip()
+            project = (row.get("project") or "").strip()
+            commit = str(row.get("commit_id") or "")
+            # 同一 commit 的所有函数分到同一组
+            group = f"bigvul::{commit}"
+            before = _clean_code(row.get("func_before"))
+            after = _clean_code(row.get("func_after"))
+            # vul 字段可能是字符串 '1' 也可能是布尔 True，统一判断
+            is_vul = str(row.get("vul")).strip() in {"1", "True", "true"}
+
+            if not before:
+                continue
+
+            if is_vul:
+                # ---- 漏洞函数（修复前）→ label=1 ----
+                yield {
+                    "id": f"bigvul::{commit}::before",
+                    "code": before, "label": 1, "cwe": cwe,
+                    "cwe_name": "", "source": "bigvul",
+                    "language": lang, "project": project, "group_id": group,
+                }
+                # ---- 修复后版本 → label=0（难负样本） ----
+                # after != before 的判断很重要：BigVul 里有些行两个字段完全一样，
+                # 那样就是重复数据，直接跳过
+                if after and after != before:
+                    yield {
+                        "id": f"bigvul::{commit}::after",
+                        "code": after, "label": 0, "cwe": "",
+                        "cwe_name": "", "source": "bigvul",
+                        "language": lang, "project": project, "group_id": group,
+                    }
+            else:
+                # ---- 同一提交里与漏洞无关的函数 → label=0 ----
+                yield {
+                    "id": f"bigvul::{commit}::irrelevant",
+                    "code": before, "label": 0, "cwe": "",
+                    "cwe_name": "", "source": "bigvul",
+                    "language": lang, "project": project, "group_id": group,
+                }
+
+
+def build_diversevul(raw_dir: Path, cfg: dict) -> Iterator[dict]:
+    """DiverseVul：target=1 为漏洞函数，target=0 为安全函数（无 CWE 字段）。"""
+    for split, fname in [("train", "train.jsonl"), ("val", "valid.jsonl"), ("test", "test.jsonl")]:
+        fp = raw_dir / "diversevul" / fname
+        if not fp.exists():
+            log.warning("缺少 DiverseVul 文件: %s", fp)
+            continue
+        with open(fp, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    o = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                code = _clean_code(o.get("func"))
+                if not code:
+                    continue
+                idx = o.get("idx")
+                project = (o.get("project") or "").strip()
+                yield {
+                    "id": f"diversevul::{project}::{idx}",
+                    "code": code,
+                    "label": 1 if str(o.get("target")).strip() in {"1", "1.0"} else 0,
+                    "cwe": "", "cwe_name": "", "source": "diversevul",
+                    "language": "C/C++", "project": project,
+                    "group_id": f"diversevul::{project}::{idx}",
+                }
+
+
+def build_codexglue(raw_dir: Path, cfg: dict) -> Iterator[dict]:
+    """CodeXGLUE defect detection：func + target(0/1)。"""
+    mapping = {"train": "train.parquet", "val": "val.parquet", "test": "test.parquet"}
+    for split, fname in mapping.items():
+        fp = raw_dir / "codexglue" / fname
+        if not fp.exists():
+            log.warning("缺少 CodeXGLUE 文件: %s", fp)
+            continue
+        for i, row in enumerate(_iter_parquet_rows(fp)):
+            code = _clean_code(row.get("func"))
+            if not code:
+                continue
+            yield {
+                "id": f"codexglue::{split}::{i}",
+                "code": code,
+                "label": 1 if int(row.get("target") or 0) == 1 else 0,
+                "cwe": "", "cwe_name": "", "source": "codexglue",
+                "language": "C/C++", "project": "", "group_id": f"codexglue::{split}::{i}",
+            }
+
+
+def build_merged(raw_dir: Path, cfg: dict) -> Iterator[dict]:
+    """四源合并；由调用方统一去重。
+
+    为什么"合并"能提升效果（本项目实测的结论）
+    ------------------------------------------
+    四个源各有短板，互补之后分布更接近真实项目：
+
+        bigvul       函数级，但项目只有 275 个、正例仅 5.2%（1:18 太极端）
+        diversevul   函数级，项目数上千，把"项目多样性"补了上来
+        codexglue    函数级，量小但标签体系独立
+        cvefixes     27 种语言，可惜是 diff 碎片（只有 8.6% 含完整函数）
+
+    ``build_merged`` 只是**按顺序串联**四个构建器，不做任何额外处理 ——
+    去重、长度过滤、分组划分都由调用方统一负责（见 ``main`` 里的处理流程），
+    这样四个源的口径完全一致，不会出现"某个源偷偷多洗了一遍"的情况。
+
+    注意：四个源的 ``group_id`` 前缀各不相同（``bigvul::`` / ``cvefixes::``
+    等），天然不会互相串组，所以合并后按 ``group_id`` 划分依然安全。
+    """
+    for fn in (build_cvefixes, build_bigvul, build_diversevul, build_codexglue):
+        yield from fn(raw_dir, cfg)
+
+
 BUILDERS: dict[str, Callable[[Path, dict], Iterator[dict]]] = {
     "cvefixes": build_cvefixes,
+    "bigvul": build_bigvul,
+    "diversevul": build_diversevul,
+    "codexglue": build_codexglue,
+    "merged": build_merged,
 }
 
 
@@ -458,7 +629,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="构建漏洞检测 / 分类数据集")
     parser.add_argument("--config", default="configs/config.yaml")
     parser.add_argument("--source", default=None,
-                        help="cvefixes（当前唯一支持的数据源），默认取配置文件")
+                        help="cvefixes | bigvul | diversevul | codexglue | merged，"
+                             "默认取配置文件")
     parser.add_argument("--task", default=None, help="detection|classification|both，默认 both")
     parser.add_argument("--raw-dir", default="data/raw")
     parser.add_argument("--out-dir", default=None)

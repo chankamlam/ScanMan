@@ -39,6 +39,12 @@ htmlcov/
 *.swo
 *~
 
+# ---------- 本机专用文档 ----------
+# 云端训练的操作手册：写的是本机路径、本机账号、上传命令，
+# 对 clone 仓库的其他人没有意义，且含本机环境信息，不进版本库。
+云端训练手册.md
+云端*
+
 # ---------- 本地私有配置 / 密钥 ----------
 # API key、HF token 之类只放在本机，绝不进版本库
 .env
@@ -62,11 +68,17 @@ data/processed/
 models/
 
 # ---------- 训练产物 ----------
-# 只忽略大文件；config.yaml / results.json / report_*.txt / *.npy / label_map.json
-# 这些小文件要留档，方便复现实验和事后分析（见 docs/05_训练产物说明.md）。
-# outputs/ 根目录下的扫描报告（scan_result.json 等）也只有几十 KB，可以提交。
+# 原则：**留档的提交，跑模型用的不提交**。
+#   config.yaml / results.json / report_*.txt / label_map.json / *_stats.json
+#   记录了这个实验的全部信息（超参、指标、每类表现），只有几十 KB，必须留档
+#   （见 docs/05_训练产物说明.md）。
+#   pytorch_model.bin（约 500 MB）和 tokenizer.json（约 3.5 MB）只在**跑推理**
+#   时才需要 —— 而权重既然不提交，clone 下来的人也永远跑不了这个检查点，
+#   单独留一份分词器没有任何意义，只是白占仓库体积。
 outputs/*/best/*.bin
 outputs/*/best/*.safetensors
+# 分词器是标准 CodeBERT 词表，各 run 之间还有重复；用 download_model.py 重新拉即可
+outputs/*/best/tokenizer.json
 outputs/*/*.npy
 # 中间检查点（改回 HF Trainer 的 save_strategy 时会出现），每个约 500 MB
 outputs/*/checkpoint-*/

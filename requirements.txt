@@ -4,12 +4,20 @@
 # ============================================================
 
 # --- 深度学习框架 ---
-# CPU 版（默认，仅用于跑通流程 / 无显卡环境）
+# ⚠️ torch 必须用 CUDA 版，否则有显卡的机器会**全程按 CPU 跑**，且不报任何错。
+#
+# 下面这行把 PyTorch 官方 CUDA 索引加为额外源。同版本号下，
+# "2.14.0+cu130" 按 PEP 440 排序高于 PyPI 的 "2.14.0"，
+# 所以 pip 会自动选中 CUDA 版 —— 实测 `pip install --dry-run` 的输出是：
+#     Would install ... torch-2.14.0+cu130 ...
+#
+# 换 CUDA 版本就改这个 URL（cu128 / cu126 / cu124 …）。
+# ⚠️ RTX 5090（Blackwell, sm_120）**必须** cu128 或更新，
+#    用 cu118 / cu121 会装出跑不起来的版本。
+# ⚠️ 装完务必自检：python -c "import torch; print(torch.cuda.is_available())"
+#    返回 False 就别开始训练。
+--extra-index-url https://download.pytorch.org/whl/cu130
 torch>=2.2
-# GPU 版请改用官方源安装，例如 CUDA 12.1：
-#   pip install torch --index-url https://download.pytorch.org/whl/cu121
-# CUDA 11.8：
-#   pip install torch --index-url https://download.pytorch.org/whl/cu118
 
 # --- 预训练模型 ---
 transformers>=4.45

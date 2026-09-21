@@ -119,6 +119,8 @@ class VulnPredictor:
             max_length = c.get("model", {}).get("max_length", max_length)
             max_code_chars = c.get("model", {}).get("max_code_chars", max_code_chars)
 
+        base_model = _resolve_backbone(base_model)
+
         # ---- 4. 加载分词器（从检查点目录加载，保证与训练一致） ----
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.max_length = max_length
@@ -241,6 +243,109 @@ class VulnPredictor:
         return results
 
 
+def _resolve_backbone(name: str) -> str:
+    """把 config.yaml 里的 ``model.name`` 解析成能被 transformers 加载的字符串。
+
+    为什么需要这一步
+    ----------------
+    ``config.yaml`` 支持两种写法（配置里自己写着"也可以直接填本地目录，
+    例如 ``models/microsoft__codebert-base``"），但 ``AutoConfig.from_pretrained``
+    **只认 HF repo id 或真实存在的路径**，不会按项目根目录解析相对路径：
+
+    .. code-block:: text
+
+        OSError: Repo id must use alphanumeric chars, '-', '_' or '.'.
+        The name cannot start or end with '-' or '.'
+        and the maximum length is 96: 'models\\microsoft__codebert-base'
+
+    老检查点（``outputs/cvefixes_detection_6ep`` 等）的 config 里存的就是这种
+    相对路径，于是"换个目录就跑不起来"—— 本函数就是修这个。
+
+    解析顺序
+    --------
+    1. 按项目根解析成本地绝对路径，**存在就用它**（离线、可复现，首选）
+    2. 解析后不存在 → 原样返回，交给 transformers 当 HF id 处理
+       （走 HF 缓存或联网下载）。这时打一条 warning，免得"本地权重没拷过来"
+       被静默地降级成"从网上重新拉了一个"，两者虽同名但不是一回事。
+
+    ``microsoft/codebert-base`` 这种本来就是 HF id 的写法会走到第 2 步，
+    行为与改动前完全一致。
+    """
+    candidate = resolve_path(name.replace("\\", "/"))
+    if candidate.exists():
+        return str(candidate)
+
+    # 只有"看起来就是在指本地目录"的写法才警告。``microsoft/codebert-base``
+    # 是标准的 HF repo id，解析不到本地是**正常**的，对它报警只会制造噪声，
+    # 让人以后忽略这个警告。
+    looks_local = (
+        Path(name).is_absolute()
+        or "\\" in name
+        or name.startswith(("./", "../", "models/"))
+    )
+    if not looks_local:
+        return name
+
+    # 本地目录没拷过来（换机器很常见）时，还能从目录名还原出 HF repo id：
+    # download_model.py 存盘时把 "microsoft/codebert-base" 写成了
+    # "microsoft__codebert-base"（``scripts/download_model.py:119``），
+    # 反过来把 ``__`` 换回 ``/`` 就是原 repo id，直接走 HF 缓存。
+    # 这比直接放弃强得多，也解释了目录名里那两个下划线的来历。
+    repo_id = Path(name.replace("\\", "/")).name.replace("__", "/")
+    if "__" in Path(name.replace("\\", "/")).name:
+        log.warning("本地模型目录 %s 不存在，按目录名还原成 HF repo id %r 加载",
+                    candidate, repo_id)
+        return repo_id
+
+    log.warning("本地模型目录 %s 不存在，原样交给 HuggingFace 处理", candidate)
+    return name
+
+
+def is_correct(pred: dict, gold, task: str) -> bool | None:
+    """判断单条预测是否命中 gold 标签。
+
+    返回 ``True`` / ``False`` 表示对错，``None`` 表示**这条没法比**（不计入统计）。
+
+    为什么要单独抽一个函数
+    ----------------------
+    **检测和分类的 gold 长得不一样**，早期版本一律写 ``int(r["label"])``，
+    结果在分类任务上直接崩：
+
+    - 检测任务的 gold 一定是 int（0=安全 / 1=漏洞）
+    - 分类任务的 gold 有**两种形态**：正式测试集里是类别下标（int），
+      而人工手写的用例（``docs/test_cases/``）里是 CWE 名字（``"CWE-120"``）
+      —— ``int("CWE-120")`` 抛 ValueError，而且崩在文件已经打开写入之后，
+      会留下一个半截的 JSONL。
+
+    三种情形的处理
+    --------------
+    ==================  ============================================
+    gold 形态            怎么比
+    ==================  ============================================
+    ``"CWE-120"`` 等名字  比预测出的 ``cwe`` 字段（大小写/空格不敏感）
+    ``1`` / ``"1"`` 等下标 比 ``label`` 字段
+    其它（None/词典/...）  返回 ``None``，跳过，不算错也不算对
+    ==================  ============================================
+
+    失败一律返回 ``None`` 而不是 ``False``：**"比不了"和"猜错了"是两回事**，
+    混在一起会把准确率算低，也会掩盖数据格式问题。
+    """
+    if gold is None:
+        return None
+
+    # CWE 名字形态：分类任务按名字比，检测任务没法比（返回 None）
+    if isinstance(gold, str) and gold.strip().upper().startswith("CWE-"):
+        if task != "classification":
+            return None
+        return str(pred.get("cwe", "")).strip().upper() == gold.strip().upper()
+
+    # 其余一律按"类别下标"比
+    try:
+        return int(pred["label"]) == int(gold)
+    except (ValueError, TypeError, KeyError):
+        return None
+
+
 def main() -> None:
     """命令行入口：解析参数 → 建推理器 → 按模式执行。"""
     parser = argparse.ArgumentParser(description="漏洞检测 / 分类推理")
@@ -303,7 +408,7 @@ def main() -> None:
     out_path = Path(args.output) if args.output else Path(args.input).with_suffix(".pred.jsonl")
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    correct = total = 0  # 用于统计与真实标签的一致率
+    correct = total = n_gold = 0  # 用于统计与真实标签的一致率
     with open(out_path, "w", encoding="utf-8") as f:
         # 按 batch_size 分批推理（比一条一条快得多）
         for i in range(0, len(records), args.batch_size):
@@ -311,17 +416,28 @@ def main() -> None:
             preds = predictor.predict([r.get("code", "") for r in chunk])
             for r, p in zip(chunk, preds):
                 row = {"id": r.get("id"), "pred": p}
-                # 如果输入数据自带 label（比如测试集），顺便算个准确率
-                if "label" in r:
-                    row["gold"] = r["label"]
-                    total += 1
-                    correct += int(int(p["label"]) == int(r["label"]))
+                # 如果输入数据自带 gold 标签（比如测试集），顺便算个准确率。
+                # gold 可能是 int（类别下标），也可能是 "CWE-120"（人工用例），
+                # 比不了的情况返回 None —— 跳过，别把准确率算错（见 is_correct）。
+                gold = r.get("label", r.get("expect_cwe"))
+                if gold is not None:
+                    row["gold"] = gold
+                    n_gold += 1
+                    ok = is_correct(p, gold, predictor.task)
+                    if ok is not None:
+                        total += 1
+                        correct += int(ok)
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
             # \r 让进度在同一行刷新
             print(f"\r  已处理 {min(i+args.batch_size, len(records))}/{len(records)}", end="")
     print()
     if total:
         log.info("与 gold 标签对比准确率: %.4f (%d/%d)", correct / total, correct, total)
+    elif n_gold:
+        # 有 gold 但一条都比不了（比如检测模型跑分类用例，或标签格式不认识）。
+        # 说清楚是"没法比"而不是"全错"，否则容易被误读成准确率 0。
+        log.warning("有 %d 条带 gold 标签，但格式与 %s 任务对不上，全部跳过未计入准确率",
+                    n_gold, predictor.task)
     log.info("预测结果 -> %s", out_path)
 
 

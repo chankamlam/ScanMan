@@ -29,13 +29,12 @@ topk_accuracy             前 k 个预测里包含正确答案的比例
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
-    classification_report,
     confusion_matrix,
     f1_score,
     matthews_corrcoef,
@@ -149,7 +148,7 @@ def compute_binary_metrics(
 
 
 def compute_multiclass_metrics(
-    y_true: np.ndarray, logits: np.ndarray, top_k: int = 3
+    y_true: np.ndarray, logits: np.ndarray, top_k: int | Sequence[int] = (3, 5)
 ) -> dict[str, Any]:
     """计算多分类（CWE 分类）的全套指标。
 
@@ -189,12 +188,24 @@ def compute_multiclass_metrics(
     }
 
     # ---- Top-k 准确率 ----
-    # 用途：给出 Top-5 候选让开发者自己挑，比只给一个答案实用得多
-    k = min(top_k, probs.shape[1])
-    topk_pred = np.argsort(-probs, axis=1)[:, :k]  # 每行取概率最大的 k 个下标
-    metrics[f"top{k}_accuracy"] = float(
-        np.mean([yt in row for yt, row in zip(y_true, topk_pred)])
-    )
+    # 用途：给出 Top-5 候选让开发者自己挑，比只给一个答案实用得多。
+    #
+    # 默认同时算 Top-3 和 Top-5：
+    # - Top-5 是**分类任务的主指标**（见 docs/07 4.3）—— 类别长尾严重，
+    #   只报 Top-1 会把"正确答案排第 2"算成完全错误，低估模型。
+    #   实际使用中审查者拿到 5 个候选去核对，比拿到一个错的答案有用。
+    # - Top-3 保留，是因为历史结果里一直是这个口径，便于前后对比。
+    #
+    # top_k 传 int 就只算那一个（老调用方的行为不变），传序列就每个都算。
+    ks = (top_k,) if isinstance(top_k, int) else tuple(top_k)
+    for k in ks:
+        # 类别数比 k 少时按类别数封顶：否则 Top-5 在 3 类问题上恒等于 1.0，
+        # 这个数字没有意义，报出来只会误导（键名也跟着变成实际生效的 k）
+        k = min(int(k), probs.shape[1])
+        topk_pred = np.argsort(-probs, axis=1)[:, :k]  # 每行取概率最大的 k 个下标
+        metrics[f"top{k}_accuracy"] = float(
+            np.mean([yt in row for yt, row in zip(y_true, topk_pred)])
+        )
     return metrics
 
 
@@ -241,35 +252,6 @@ def per_class_report(
     for i, name in enumerate(label_names):
         lines.append(f"{name[:33]:<34}{p[i]:>9.4f}{r[i]:>9.4f}{f[i]:>9.4f}{int(s[i]):>10}")
     return "\n".join(lines)
-
-
-def classification_report_text(
-    y_true: np.ndarray, logits: np.ndarray, label_names: list[str]
-) -> str:
-    """直接调用 sklearn 生成完整分类报告。
-
-    参数
-    ----
-    y_true, logits : np.ndarray
-        真实标签与模型分数。
-    label_names : list[str]
-        类别名称。
-
-    返回
-    ----
-    str
-        sklearn 的 classification_report 文本（含 precision/recall/f1/support
-        以及 macro avg / weighted avg 汇总行）。
-    """
-    y_pred = softmax(logits).argmax(axis=-1)
-    return classification_report(
-        y_true,
-        y_pred,
-        labels=list(range(len(label_names))),
-        target_names=label_names,
-        zero_division=0,
-        digits=4,
-    )
 
 
 def format_metrics(metrics: dict[str, Any]) -> str:
