@@ -15,7 +15,7 @@
     python scripts/scan_project.py src/
 
     # 连推理一起做（需要训练好的检查点）
-    python scripts/scan_project.py . --checkpoint outputs/cvefixes_detection_6ep/best
+    python scripts/scan_project.py . --checkpoint outputs/merged_detection_codebert/best
 
     # 只要顶层函数、跳过测试目录、不把源码写进报告
     python scripts/scan_project.py . --checkpoint <ckpt> --outer-only \
@@ -60,7 +60,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import resolve_path  # noqa: E402
-from src.extract import extract_from_file, supported_extensions  # noqa: E402
+from src.extract import (  # noqa: E402
+    MAX_FILE_BYTES,
+    extract_from_file,
+    supported_extensions,
+)
 from src.utils import ensure_dir, get_logger, human_int  # noqa: E402
 
 log = get_logger("scan")
@@ -462,12 +466,13 @@ def main() -> int:
     parser.add_argument("--classifier", default=None,
                         help="微调后的分类模型目录。给定时对**检测命中**的函数"
                              "再跑一级 CWE 分类，报告里多出 cwe/cwe_topk 字段")
-    parser.add_argument("--device", default=None, help="cpu | cuda | cuda:1")
+    parser.add_argument("--device", default=None,
+                        help="cpu | cuda | mps | cuda:1，默认自动（CUDA > MPS > CPU）")
     parser.add_argument("--batch-size", type=int, default=16, help="推理批大小")
     parser.add_argument("--threshold", type=float, default=None,
                         help="判定阈值（默认读检查点的 best/threshold.json，没有则 0.5）")
-    parser.add_argument("--max-file-size", type=int, default=2_000_000,
-                        help="单文件体积上限（字节），超过则跳过")
+    parser.add_argument("--max-file-size", type=int, default=MAX_FILE_BYTES,
+                        help=f"单文件体积上限（字节，默认 {MAX_FILE_BYTES:,}），超过则跳过")
     parser.add_argument("--outer-only", action="store_true",
                         help="只统计顶层函数（丢嵌套函数与闭包）")
     parser.add_argument("--skip-dir", action="append", default=[],

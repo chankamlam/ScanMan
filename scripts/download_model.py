@@ -75,7 +75,7 @@ MIRRORS = {
 }
 
 
-def main() -> None:
+def main() -> int:
     """命令行入口。"""
     parser = argparse.ArgumentParser(description="下载预训练模型")
     parser.add_argument("--models", default="codebert", help="逗号分隔，或 all")
@@ -94,7 +94,7 @@ def main() -> None:
         print("官方源 : https://huggingface.co/<repo>")
         print("国内镜像: https://hf-mirror.com/<repo>   （用 --mirror hf-mirror）")
         print("ModelScope 备选: https://www.modelscope.cn/models  搜索同名字模型\n")
-        return
+        return 0
 
     # ---- 确定下载源 ----
     # HF_ENDPOINT 是 huggingface_hub 官方支持的环境变量，
@@ -109,6 +109,7 @@ def main() -> None:
     names = list(MODELS) if args.models == "all" else [s.strip() for s in args.models.split(",")]
     out_root = ensure_dir(resolve_path(args.out))
 
+    failed: list[str] = []
     for name in names:
         if name not in MODELS:
             log.warning("跳过未知模型: %s", name)
@@ -138,14 +139,28 @@ def main() -> None:
             )
             log.info("完成: %s", repo)
         except Exception as e:  # noqa: BLE001
+            failed.append(name)
             log.error("下载失败 %s: %s", repo, e)
             log.error("可尝试：--mirror hf-mirror，或设置环境变量 HF_ENDPOINT=https://hf-mirror.com")
 
-    log.info("全部完成 ✅ 本地模型位于 %s", out_root)
-    # 提示训练时该怎么写 --model 参数
-    log.info("训练时用：python scripts/train.py --model %s",
-             out_root / MODELS[names[0]]["repo"].replace("/", "__") if names else "<path>")
+    # 提示训练时该怎么写 --model 参数。
+    # 这里必须用"有效的名字"而不是 names[0]：--models 拼错一个词时，
+    # 循环里全部跳过，最后这行查 MODELS[names[0]] 会 KeyError 崩掉整个脚本。
+    valid = [n for n in names if n in MODELS]
+    if not valid:
+        log.error("没有可用的模型名（收到：%s）。可用：%s",
+                  ", ".join(names) or "(空)", ", ".join(MODELS))
+        return 1
+
+    log.info("本地模型位于 %s", out_root)
+    repo = MODELS[valid[0]]["repo"]
+    log.info("训练时用：python scripts/train.py --model %s", out_root / repo.replace("/", "__"))
+    if failed:
+        log.error("有 %d 个模型没能下载：%s", len(failed), ", ".join(failed))
+        return 1
+    log.info("全部完成 ✅")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

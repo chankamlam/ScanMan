@@ -72,8 +72,12 @@ task:
 data:
   # 数据源，对应 scripts/build_dataset.py 里注册的构建器：
   #   cvefixes    CVEfixes（1.9 万条检测 / 7,291 条分类，40 个 CWE）
-  #               本项目只使用这一个数据源（BigVul / DiverseVul / CodeXGLUE
-  #               及四源合并版已移除）。
+  #   bigvul      BigVul，C/C++ 函数级，带 CWE
+  #   diversevul  DiverseVul，C/C++ 函数级，无 CWE
+  #   codexglue   CodeXGLUE defect detection（Devign），C/C++ 函数级
+  #   merged      上述四源合并去重
+  # 注意：scripts/download_data.py 目前只提供 cvefixes 的下载，
+  #       其余数据源需自行准备 data/raw/ 下的原始文件（布局见 README）。
   source: cvefixes
 
   # 训练 / 验证 / 测试 的划分比例。

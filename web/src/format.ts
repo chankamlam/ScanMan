@@ -35,8 +35,8 @@ export function bytes(n: number | undefined): string {
 /**
  * 把后端可能很长的绝对路径缩短，只保留最后两段。
  *
- * 报告里的 `checkpoint` 实测可能是别的机器的路径
- * （如 `D:/workbuddy_workspace/vuln_bert/outputs/.../best`），
+ * 报告里的 `checkpoint` 可能是别的机器的绝对路径
+ * （如 `D:/somewhere/ScanMan/outputs/.../best`），
  * 全展示会撑爆布局，且对看的人也没信息量。
  */
 export function shortPath(p: string | null | undefined, keep = 2): string {

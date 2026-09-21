@@ -29,13 +29,13 @@
 ``php``       .php .php3 .php5 .phtml
 ============  ================================================================
 
-新增语言只需改两处：``LANGUAGE_BY_EXT`` 和 ``FUNCTION_TYPES``（外加
-``_PARSER_MODULES`` 里登记语法包），不用动抽取逻辑。
+新增语言只需改三处：``LANGUAGE_BY_EXT``、``FUNCTION_TYPES`` 和
+``_PARSER_MODULES``（登记语法包），不用动抽取逻辑。
 
 两个容易踩的坑（本模块已规避）
 ------------------------------
-1. **绝不读 ``Node.start_point`` / ``Node.end_point``**：本机 py312 环境下
-   （tree-sitter 0.26.0 + tree-sitter-python 0.25.0），读 ``start_point.row``
+1. **绝不读 ``Node.start_point`` / ``Node.end_point``**：在 tree-sitter 0.26.0 +
+   tree-sitter-python 0.25.0 这一代上，读 ``start_point.row``
    会**非确定性段错误**（access violation：同样的输入，同一份代码，
    每次崩在哪个文件/哪一行都不一样）。实测 ``start_point`` 对象本身、
    以及 ``.column`` 都安全，**只有 ``.row`` 会崩** —— 属于绑定层缺陷，

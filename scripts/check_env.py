@@ -198,18 +198,21 @@ def check_data() -> None:
     raw = resolve_path("data/raw")
     print("\n--- 原始数据 data/raw ---")
     if not raw.exists():
-        print(f"{WARN} 目录不存在，请运行 python scripts/download_data.py --datasets all")
-        return
-    total = 0
-    for sub in sorted(raw.iterdir()):
-        if sub.is_dir():
-            # 排除还没下完的 .part 临时文件
-            files = [f for f in sub.rglob("*") if f.is_file() and not f.name.endswith(".part")]
-            size = sum(f.stat().st_size for f in files)
-            total += size
-            print(f"{OK if files else WARN} {sub.name:<24} {len(files)} 个文件  "
-                  f"{size/1048576:.1f} MB")
-    print(f"     合计 {total/1048576:.1f} MB")
+        # 注意**不要**在这里 return：data/raw 缺失只说明"不能重新构建数据集"，
+        # 下面的 data/processed 仍然可能是齐的（很多人只同步构建好的数据）。
+        print(f"{WARN} 目录不存在。想重新构建数据集就运行 "
+              f"python scripts/download_data.py --datasets cvefixes")
+    else:
+        total = 0
+        for sub in sorted(raw.iterdir()):
+            if sub.is_dir():
+                # 排除还没下完的 .part 临时文件
+                files = [f for f in sub.rglob("*") if f.is_file() and not f.name.endswith(".part")]
+                size = sum(f.stat().st_size for f in files)
+                total += size
+                print(f"{OK if files else WARN} {sub.name:<24} {len(files)} 个文件  "
+                      f"{size/1048576:.1f} MB")
+        print(f"     合计 {total/1048576:.1f} MB")
 
     # ---------------- 处理后数据 ----------------
     print("\n--- 处理后数据 data/processed ---")
@@ -217,13 +220,36 @@ def check_data() -> None:
     if not proc.exists() or not any(proc.glob("*.jsonl")):
         print(f"{WARN} 尚未构建，请运行 python scripts/build_dataset.py --source cvefixes")
         return
-    # 遍历每个数据源的统计文件，打印规模信息
+    # 遍历每个数据集的统计文件，打印规模信息。
+    # 统一 schema（build_dataset.py / relabel_classes.py 都按它写）：
+    #     {"source": 前缀, "total_raw": 样本数, "tasks": {任务: {"num_labels", "splits"}}}
+    # 这里全部用 .get 兜底：读到旧版本或被手工改过的 stats 时只报警告，
+    # 不能因为一个文件格式不对就让整个自检崩掉。
     for stats_file in sorted(proc.glob("*_stats.json")):
-        st = json.loads(stats_file.read_text(encoding="utf-8"))
-        print(f"{OK} 数据源 {st['source']}  原始 {human_int(st['total_raw'])} 条")
-        for task, info in st.get("tasks", {}).items():
-            parts = ", ".join(f"{k}={human_int(v['n'])}" for k, v in info["splits"].items())
-            print(f"       {task:<16} 类别数={info['num_labels']:<4} {parts}")
+        try:
+            st = json.loads(stats_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            print(f"{WARN} {stats_file.name} 不是合法 JSON：{exc}")
+            continue
+
+        src = st.get("source") or stats_file.name.removesuffix("_stats.json")
+        total = st.get("total_raw")
+        head = f"{OK} 数据源 {src}"
+        if isinstance(total, int):
+            head += f"  原始 {human_int(total)} 条"
+        print(head)
+
+        tasks = st.get("tasks")
+        if not isinstance(tasks, dict):
+            print(f"{WARN} {stats_file.name} 缺少 tasks 字段，无法打印明细")
+            continue
+        for task, info in tasks.items():
+            splits = (info or {}).get("splits") or {}
+            parts = ", ".join(
+                f"{k}={human_int(v['n'])}" for k, v in splits.items()
+                if isinstance(v, dict) and "n" in v
+            )
+            print(f"       {task:<16} 类别数={info.get('num_labels', '?'):<4} {parts}")
 
 
 def check_models() -> None:

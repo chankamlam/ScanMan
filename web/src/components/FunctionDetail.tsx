@@ -58,8 +58,18 @@ export function FunctionDetail({
         {hasVerdict ? (
           <div style={{ marginBottom: 20 }}>
             <ProbScale value={fn.prob_vulnerable ?? 0} verdict={fn.verdict!} threshold={threshold} />
+            {/*
+              ⚠️ 这里**不能**写「原始置信度 {confidence}」。
+              `confidence` 的含义随判定结果变化（见 types.ts 第 31-36 行）：
+              判为 vulnerable 时它等于 p(漏洞)，判为 safe 时却是 p(安全) ——
+              于是判为安全时页面上会出现「漏洞概率 62.5%」和「置信度 0.3751」
+              两个数字并排，看起来互相矛盾。
+              直接给两个互补的概率，语义唯一，怎么读都不会错。
+            */}
             <div className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 7 }}>
-              原始置信度 {fn.confidence?.toFixed(4) ?? '—'}
+              原始输出 p(有漏洞) {fn.prob_vulnerable?.toFixed(4) ?? '—'}
+              <span style={{ margin: '0 6px' }}>·</span>
+              p(安全) {(1 - (fn.prob_vulnerable ?? 0)).toFixed(4)}
             </div>
           </div>
         ) : (

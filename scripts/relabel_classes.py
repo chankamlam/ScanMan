@@ -4,8 +4,8 @@
 ------------------
 ``build_dataset.py`` 里**已经有**长尾归并逻辑（``min_class_samples`` +
 ``top_k_classes`` 两个配置项），但那段逻辑跑在**从原始数据构建**的时候。
-而 ``merged`` 这个数据源的构建器**不在本仓库里**（``BUILDERS`` 目前只注册
-了 ``cvefixes``），所以没法"改配置重跑一遍"。
+``merged`` 的构建器在 ``BUILDERS`` 里是注册了的，改配置也能重跑；但那要
+把四源原始数据（约 4 GB）重新抽一遍、重新去重划分，只为了换个类别数并不划算。
 
 于是这个脚本换个角度：直接对**已经构建好的** JSONL 重新打标。
 
@@ -16,6 +16,9 @@
 **不做**：代码一个字符都不改，样本一条都不增删，train/val/test 的划分完全不变。
 所以它**不是数据清洗**（数据本身没有毛病），而是**标签体系的重新设计** ——
 把"保留 Top-40 个 CWE"改成"保留 Top-N 个"，剩下的倒进 OTHER。
+
+> 重标的口径必须和 ``build_dataset.py`` 一致（按 ``cwe`` 统计、在全部记录上
+> 按样本量降序），否则同一份数据会出现两套类别编号。
 
 这是同一件事的两种规模，不是两种东西。原始的 ``min_class_samples`` 归并
 已经把 220 种 CWE 里的 180 种倒进了 OTHER，本脚本只是把这条线往下移。
@@ -78,8 +81,14 @@ SPLITS = ("train", "val", "test")
 OTHER_NAME = "OTHER"
 
 
-def read_jsonl(path: Path) -> list[dict]:
-    """读 JSONL 成列表。空行跳过，坏行直接抛 —— 宁可在打标前崩掉。"""
+def read_jsonl_strict(path: Path) -> list[dict]:
+    """读 JSONL 成列表。空行跳过，坏行直接抛 —— 宁可在打标前崩掉。
+
+    命名里带 ``_strict`` 是为了和 ``src.utils.read_jsonl`` 区分开：
+    后者是**容错**的流式读取器（坏行静默跳过），适合扫描大文件；
+    重标数据时静默跳过一行会让 ``label_map`` 和样本对不上，所以这里选择
+    立刻报错。两者故意不合并。
+    """
     rows: list[dict] = []
     with path.open(encoding="utf-8") as f:
         for lineno, line in enumerate(f, 1):
@@ -173,7 +182,7 @@ def main() -> int:
         p = data_dir / f"{args.source}_{args.task}_{split}.jsonl"
         if not p.exists():
             raise SystemExit(f"缺少数据文件 {p}")
-        raw[split] = read_jsonl(p)
+        raw[split] = read_jsonl_strict(p)
         log.info("读入 %-5s %s 条  (%s)", split, human_int(len(raw[split])), p.name)
 
     total = sum(len(v) for v in raw.values())
@@ -198,11 +207,25 @@ def main() -> int:
     log.info("保留 %d 个 CWE + OTHER = %d 类", len(kept), num_labels)
 
     # ---- 3. 重新打标并落盘 ----
+    # stats 的结构与 build_dataset.py 生成的 <source>_stats.json **保持兼容**：
+    #   source / total_raw / tasks{<task>: {num_labels, splits}}
+    # 这样 check_env.py 之类按统一 schema 读统计文件的工具不用为它开特例。
+    # 额外再带上重标专有的字段（out / relabeled_from / kept / ...）作为补充。
     stats: dict[str, Any] = {
-        "source": args.source, "out": out_name, "task": args.task,
-        "top_k": args.top_k, "min_class_samples": args.min_class_samples,
-        "num_labels": num_labels, "raw_cwe_kinds": len(counter),
-        "kept": kept, "splits": {},
+        # 产出数据集的标识（与文件名前缀一致），不是输入前缀
+        "source": out_name,
+        "relabeled_from": args.source,
+        "out": out_name,
+        "task": args.task,
+        "top_k": args.top_k,
+        "min_class_samples": args.min_class_samples,
+        "num_labels": num_labels,
+        "raw_cwe_kinds": len(counter),
+        "kept": kept,
+        # 与 build_dataset 同口径：构建这份数据时涉及的样本总数
+        "total_raw": total,
+        "tasks": {args.task: {"num_labels": num_labels, "splits": {}}},
+        "splits": {},
     }
 
     for split in SPLITS:
@@ -229,6 +252,8 @@ def main() -> int:
             "kept_count": n - after.get(other_id, 0),
             "label_dist": dict(sorted(after.items())),
         }
+        # 复用同一份 split 明细，避免两处各写一遍而慢慢走样
+        stats["tasks"][args.task]["splits"][split] = stats["splits"][split]
         log.info("%-5s %s 条 -> %s  (类别 %d -> %d)",
                  split, human_int(n), out_path.name, len(before), len(after))
 

@@ -6,7 +6,7 @@
 ------------------------------------
 - **检测任务**是二分类，我们只关心"有漏洞"这个正类。
   所以用 binary 口径的 precision/recall/F1，再加上 AUC、MCC。
-- **分类任务**是多分类（41 个 CWE），类别之间不平衡，
+- **分类任务**是多分类（演示模型 28 类，CVEfixes 41 类），类别之间不平衡，
   所以用 macro 口径（每个类别等权），并补充 Top-k 准确率。
 
 指标速查
@@ -42,6 +42,13 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     roc_auc_score,
+)
+
+#: 打印阈值扫描表时用的"粗网格"。``evaluate.py`` 与 ``tune_threshold.py``
+#: 共用这一份，避免两边各写一份、日后慢慢对不上。
+#: 细扫（找最优阈值）用 ``tune_threshold.py`` 里的 ``FINE_GRID``。
+SWEEP_THRESHOLDS: tuple[float, ...] = (
+    0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10,
 )
 
 
@@ -89,10 +96,13 @@ def compute_binary_metrics(
         --------------------
         漏洞检测里 **漏报（FN）比误报（FP）严重得多**：漏掉一个真漏洞可能被利用，
         误报只是让开发者多看一眼。所以实际落地时通常把阈值调低，
-        用一点 precision 换大量 recall。实测（CVEfixes 6 轮模型）：
+        用一点 precision 换大量 recall。实测
+        （``outputs/merged_detection_codebert``，验证集，见 ``best/threshold.json``）：
 
-            阈值 0.50 -> recall 0.782, precision 0.719, FN=186
-            阈值 0.215 -> recall 0.902, precision 0.661, FN=84   ← 召回率翻过 90%
+            阈值 0.67（按 F1 选） -> precision 0.459, recall 0.591, FN=2,155, FP=3,681
+
+        阈值越低召回越高、误报也越多，具体权衡用
+        ``scripts/tune_threshold.py`` 在**验证集**上扫一遍再定。
 
         阈值怎么选？用 ``scripts/tune_threshold.py`` 扫一遍，它会输出
         "达到目标召回率所需的最优阈值"，并写进检查点目录的 ``threshold.json``。
@@ -111,10 +121,6 @@ def compute_binary_metrics(
     **实际安全**      TN（对的）            FP（误报）
     **实际有漏洞**    FN（漏报）            TP（对的）
     ==============  ==================  ==================
-
-    对漏洞检测来说 **FN 比 FP 严重得多**：漏掉一个真漏洞可能被利用，
-    而误报只是让开发者多看一眼。所以实际落地时经常调低判定阈值，
-    牺牲一点 precision 换取更高的 recall。
     """
     # 取"有漏洞"这一列的概率
     probs = softmax(logits)[:, 1]
@@ -158,8 +164,10 @@ def compute_multiclass_metrics(
         形状 ``(N,)``，真实类别编号。
     logits : np.ndarray
         形状 ``(N, K)``。
-    top_k : int
-        计算 Top-k 准确率时的 k，默认 3。
+    top_k : int | Sequence[int]
+        计算 Top-k 准确率的 k；默认 ``(3, 5)``，即同时输出
+        ``top3_accuracy`` 与 ``top5_accuracy``。传单个 int 时只算那一个
+        （保持老调用方的行为），且当 k 超过类别数时会按类别数封顶。
 
     返回
     ----
@@ -168,7 +176,8 @@ def compute_multiclass_metrics(
 
     为什么主指标选 macro_f1 而不是 accuracy
     --------------------------------------
-    41 个 CWE 类别极度不平衡（CWE-79 有 1103 条，CWE-1333 只有 30 条）。
+    几十个 CWE 类别极度不平衡（CVEfixes 里 CWE-79 有 1103 条，
+    CWE-1333 只有 30 条）。
     如果看 accuracy，模型只要把所有样本都猜成 CWE-79 就能拿到不低的分数，
     但这对少数类毫无用处。macro_f1 给每个类别相同的权重，
     能真实反映模型在长尾类别上的表现。
@@ -251,6 +260,17 @@ def per_class_report(
     lines.append("-" * 71)
     for i, name in enumerate(label_names):
         lines.append(f"{name[:33]:<34}{p[i]:>9.4f}{r[i]:>9.4f}{f[i]:>9.4f}{int(s[i]):>10}")
+
+    # 落在 0..K-1 之外的 gold 标签会被 precision_recall_fscore_support 忽略，
+    # 于是上表 support 之和 ≠ 样本总数。这种事必须显式说出来，否则看表的人
+    # 会以为"这个类别真的一条样本都没有"（典型场景：拿 28 类模型去评 41 类数据）。
+    n_out = int(np.sum((y_true < 0) | (y_true >= len(label_names))))
+    if n_out:
+        lines.append("")
+        lines.append(
+            f"⚠️ 共 {n_out} / {len(y_true)} 条样本的标签不在 0~{len(label_names) - 1} 之间，"
+            f"未计入上表：请确认评估数据与检查点的类别体系一致。"
+        )
     return "\n".join(lines)
 
 

@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
   "tool": "scanman",
-  "generated_at": "2026-09-21T20:21:15+08:00",
+  "generated_at": "2026-09-21T22:03:51+08:00",
   "root": "D:\\Dev\\Projects\\ScanMan\\demo_verified",
   "checkpoint": "outputs/merged_detection_codebert/best",
   "threshold": 0.6699999999999999,
   "classifier_checkpoint": "outputs/merged_top27_codebert_e20/best",
   "summary": {
-    "files_scanned": 7,
+    "files_scanned": 13,
     "files_skipped": 0,
-    "functions_total": 16,
-    "functions_suspicious": 13,
-    "functions_classified": 13,
+    "functions_total": 30,
+    "functions_suspicious": 23,
+    "functions_classified": 23,
     "languages": {
-      "c": 16
+      "c": 30
     }
   },
   "skipped": [],
   "files": [
     {
-      "path": "curl.c",
+      "path": "test_01.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1206,
@@ -39,13 +39,13 @@
           "parent_name": null,
           "code": "CURLcode pop3_regular_transfer(struct connectdata *conn,\r\n                              bool *dophase_done)\r\n{\r\n  CURLcode result=CURLE_OK;\r\n  bool connected=FALSE;\r\n  struct SessionHandle *data = conn->data;\r\n  data->req.size = -1; /* make sure this is unknown at this point */\r\n\r\n  Curl_pgrsSetUploadCounter(data, 0);\r\n  Curl_pgrsSetDownloadCounter(data, 0);\r\n  Curl_pgrsSetUploadSize(data, 0);\r\n  Curl_pgrsSetDownloadSize(data, 0);\r\n\r\n  result = pop3_perform(conn,\r\n                        &connected, /* have we connected after PASV/PORT */\r\n                        dophase_done); /* all commands in the DO-phase done? */\r\n\r\n  if(CURLE_OK == result) {\r\n\r\n    if(!*dophase_done)\r\n      /* the DO phase has not completed yet */\r\n      return CURLE_OK;\r\n\r\n    result = pop3_dophase_done(conn, connected);\r\n    if(result)\r\n      return result;\r\n  }\r\n\r\n  return result;\r\n}",
           "verdict": "safe",
-          "confidence": 0.3750998079776764,
-          "prob_vulnerable": 0.624900221824646
+          "confidence": 0.3750998377799988,
+          "prob_vulnerable": 0.6249001622200012
         }
       ]
     },
     {
-      "path": "jasper.c",
+      "path": "test_02.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5782,
@@ -71,23 +71,23 @@
           "cwe_topk": [
             {
               "cwe": "CWE-119",
-              "prob": 0.7614331245422363
+              "prob": 0.7614330053329468
             },
             {
               "cwe": "CWE-125",
-              "prob": 0.0766652300953865
+              "prob": 0.07666508108377457
             },
             {
               "cwe": "OTHER",
-              "prob": 0.04772603139281273
+              "prob": 0.04772605001926422
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.047697294503450394
+              "prob": 0.04769745096564293
             },
             {
               "cwe": "CWE-476",
-              "prob": 0.03699931129813194
+              "prob": 0.036999184638261795
             }
           ]
         },
@@ -109,23 +109,23 @@
           "cwe_topk": [
             {
               "cwe": "CWE-119",
-              "prob": 0.6191222667694092
+              "prob": 0.6191233396530151
             },
             {
               "cwe": "CWE-476",
-              "prob": 0.22975589334964752
+              "prob": 0.2297549843788147
             },
             {
               "cwe": "OTHER",
-              "prob": 0.03881784901022911
+              "prob": 0.03881785646080971
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.03026483580470085
+              "prob": 0.030264856293797493
             },
             {
               "cwe": "CWE-125",
-              "prob": 0.02533203735947609
+              "prob": 0.025332029908895493
             }
           ]
         },
@@ -147,30 +147,30 @@
           "cwe_topk": [
             {
               "cwe": "CWE-119",
-              "prob": 0.7787206172943115
+              "prob": 0.778720498085022
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.06927599757909775
+              "prob": 0.06927609443664551
             },
             {
               "cwe": "CWE-476",
-              "prob": 0.06336157023906708
+              "prob": 0.06336144357919693
             },
             {
               "cwe": "OTHER",
-              "prob": 0.03938676416873932
+              "prob": 0.039386820048093796
             },
             {
               "cwe": "CWE-125",
-              "prob": 0.03049754910171032
+              "prob": 0.030497578904032707
             }
           ]
         }
       ]
     },
     {
-      "path": "krb5.c",
+      "path": "test_03.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1200,
@@ -196,30 +196,30 @@
           "cwe_topk": [
             {
               "cwe": "CWE-119",
-              "prob": 0.5855649709701538
+              "prob": 0.585565984249115
             },
             {
               "cwe": "CWE-200",
-              "prob": 0.16840003430843353
+              "prob": 0.16839911043643951
             },
             {
               "cwe": "CWE-399",
-              "prob": 0.09419061988592148
+              "prob": 0.09419085830450058
             },
             {
               "cwe": "CWE-189",
-              "prob": 0.0565527118742466
+              "prob": 0.05655236169695854
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.045288607478141785
+              "prob": 0.04528866335749626
             }
           ]
         }
       ]
     },
     {
-      "path": "libgit2.c",
+      "path": "test_04.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 4183,
@@ -239,8 +239,8 @@
           "parent_name": null,
           "code": "static int add_push_report_sideband_pkt(git_push *push, git_pkt_data *data_pkt, git_buf *data_pkt_buf)\r\n{\r\n\tgit_pkt *pkt;\r\n\tconst char *line, *line_end;\r\n\tsize_t line_len;\r\n\tint error;\r\n\tint reading_from_buf = data_pkt_buf->size > 0;\r\n\r\n\tif (reading_from_buf) {\r\n\t\t/* We had an existing partial packet, so add the new\r\n\t\t * packet to the buffer and parse the whole thing */\r\n\t\tgit_buf_put(data_pkt_buf, data_pkt->data, data_pkt->len);\r\n\t\tline = data_pkt_buf->ptr;\r\n\t\tline_len = data_pkt_buf->size;\r\n\t}\r\n\telse {\r\n\t\tline = data_pkt->data;\r\n\t\tline_len = data_pkt->len;\r\n\t}\r\n\r\n\twhile (line_len > 0) {\r\n\t\terror = git_pkt_parse_line(&pkt, line, &line_end, line_len);\r\n\r\n\t\tif (error == GIT_EBUFS) {\r\n\t\t\t/* Buffer the data when the inner packet is split\r\n\t\t\t * across multiple sideband packets */\r\n\t\t\tif (!reading_from_buf)\r\n\t\t\t\tgit_buf_put(data_pkt_buf, line, line_len);\r\n\t\t\terror = 0;\r\n\t\t\tgoto done;\r\n\t\t}\r\n\t\telse if (error < 0)\r\n\t\t\tgoto done;\r\n\r\n\t\t/* Advance in the buffer */\r\n \t\tline_len -= (line_end - line);\r\n \t\tline = line_end;\r\n \r\n\t\t/* When a valid packet with no content has been\r\n\t\t * read, git_pkt_parse_line does not report an\r\n\t\t * error, but the pkt pointer has not been set.\r\n\t\t * Handle this by skipping over empty packets.\r\n\t\t */\r\n\t\tif (pkt == NULL)\r\n\t\t\tcontinue;\r\n \t\terror = add_push_report_pkt(push, pkt);\r\n \r\n \t\tgit_pkt_free(pkt);\r\n\r\n\t\tif (error < 0 && error != GIT_ITEROVER)\r\n\t\t\tgoto done;\r\n\t}\r\n\r\n\terror = 0;\r\n\r\ndone:\r\n\tif (reading_from_buf)\r\n\t\tgit_buf_consume(data_pkt_buf, line_end);\r\n\treturn error;\r\n}",
           "verdict": "vulnerable",
-          "confidence": 0.8691422343254089,
-          "prob_vulnerable": 0.8691422343254089,
+          "confidence": 0.8691421747207642,
+          "prob_vulnerable": 0.8691421747207642,
           "cwe": "CWE-476",
           "cwe_topk": [
             {
@@ -249,19 +249,19 @@
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.010824345983564854
+              "prob": 0.010824305936694145
             },
             {
               "cwe": "CWE-416",
-              "prob": 0.006387077737599611
+              "prob": 0.006387083791196346
             },
             {
               "cwe": "OTHER",
-              "prob": 0.004626287147402763
+              "prob": 0.004626278765499592
             },
             {
               "cwe": "CWE-125",
-              "prob": 0.004432798363268375
+              "prob": 0.0044327834621071815
             }
           ]
         },
@@ -277,36 +277,36 @@
           "parent_name": null,
           "code": "int git_delta_apply(\r\n\tvoid **out,\r\n\tsize_t *out_len,\r\n\tconst unsigned char *base,\r\n\tsize_t base_len,\r\n\tconst unsigned char *delta,\r\n\tsize_t delta_len)\r\n{\r\n\tconst unsigned char *delta_end = delta + delta_len;\r\n\tsize_t base_sz, res_sz, alloc_sz;\r\n\tunsigned char *res_dp;\r\n\r\n\t*out = NULL;\r\n\t*out_len = 0;\r\n\r\n\t/*\r\n\t * Check that the base size matches the data we were given;\r\n\t * if not we would underflow while accessing data from the\r\n\t * base object, resulting in data corruption or segfault.\r\n\t */\r\n\tif ((hdr_sz(&base_sz, &delta, delta_end) < 0) || (base_sz != base_len)) {\r\n\t\tgiterr_set(GITERR_INVALID, \"failed to apply delta: base size does not match given data\");\r\n\t\treturn -1;\r\n\t}\r\n\r\n\tif (hdr_sz(&res_sz, &delta, delta_end) < 0) {\r\n\t\tgiterr_set(GITERR_INVALID, \"failed to apply delta: base size does not match given data\");\r\n\t\treturn -1;\r\n\t}\r\n\r\n\tGITERR_CHECK_ALLOC_ADD(&alloc_sz, res_sz, 1);\r\n\tres_dp = git__malloc(alloc_sz);\r\n\tGITERR_CHECK_ALLOC(res_dp);\r\n\r\n\tres_dp[res_sz] = '\\0';\r\n\t*out = res_dp;\r\n\t*out_len = res_sz;\r\n\r\n\twhile (delta < delta_end) {\r\n\t\tunsigned char cmd = *delta++;\r\n\t\tif (cmd & 0x80) {\r\n \t\t\t/* cmd is a copy instruction; copy from the base. */\r\n \t\t\tsize_t off = 0, len = 0;\r\n \r\n\t\t\tif (cmd & 0x01) off = *delta++;\r\n\t\t\tif (cmd & 0x02) off |= *delta++ << 8UL;\r\n\t\t\tif (cmd & 0x04) off |= *delta++ << 16UL;\r\n\t\t\tif (cmd & 0x08) off |= ((unsigned) *delta++ << 24UL);\r\n\t\t\tif (cmd & 0x10) len = *delta++;\r\n\t\t\tif (cmd & 0x20) len |= *delta++ << 8UL;\r\n\t\t\tif (cmd & 0x40) len |= *delta++ << 16UL;\r\n \t\t\tif (!len)       len = 0x10000;\r\n \r\n \t\t\tif (base_len < off + len || res_sz < len)\r\n \t\t\t\tgoto fail;\r\n\t\t\tmemcpy(res_dp, base + off, len);\r\n\t\t\tres_dp += len;\r\n\t\t\tres_sz -= len;\r\n\r\n\t\t} else if (cmd) {\r\n\t\t\t/*\r\n\t\t\t * cmd is a literal insert instruction; copy from\r\n\t\t\t * the delta stream itself.\r\n\t\t\t */\r\n\t\t\tif (delta_end - delta < cmd || res_sz < cmd)\r\n\t\t\t\tgoto fail;\r\n\t\t\tmemcpy(res_dp, delta, cmd);\r\n\t\t\tdelta += cmd;\r\n\t\t\tres_dp += cmd;\r\n\t\t\tres_sz -= cmd;\r\n\r\n\t\t} else {\r\n\t\t\t/* cmd == 0 is reserved for future encodings. */\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t}\r\n\r\n\tif (delta != delta_end || res_sz)\r\n\t\tgoto fail;\r\n\treturn 0;\r\n\r\nfail:\r\n\tgit__free(*out);\r\n\r\n\t*out = NULL;\r\n\t*out_len = 0;\r\n\r\n\tgiterr_set(GITERR_INVALID, \"failed to apply delta\");\r\n\treturn -1;\r\n}",
           "verdict": "vulnerable",
-          "confidence": 0.8473178148269653,
-          "prob_vulnerable": 0.8473178148269653,
+          "confidence": 0.8473176956176758,
+          "prob_vulnerable": 0.8473176956176758,
           "cwe": "CWE-125",
           "cwe_topk": [
             {
               "cwe": "CWE-125",
-              "prob": 0.9313266277313232
+              "prob": 0.9313268661499023
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.025455042719841003
+              "prob": 0.02545497566461563
             },
             {
               "cwe": "OTHER",
-              "prob": 0.022918837144970894
+              "prob": 0.022918786853551865
             },
             {
               "cwe": "CWE-476",
-              "prob": 0.006209894549101591
+              "prob": 0.006209898740053177
             },
             {
               "cwe": "CWE-787",
-              "prob": 0.004585730843245983
+              "prob": 0.004585722461342812
             }
           ]
         }
       ]
     },
     {
-      "path": "linux.c",
+      "path": "test_05.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5340,
@@ -326,8 +326,8 @@
           "parent_name": null,
           "code": "static u32 nested_vmx_load_msr(struct kvm_vcpu *vcpu, u64 gpa, u32 count)\r\n{\r\n\tu32 i;\r\n\tstruct vmx_msr_entry e;\r\n\tstruct msr_data msr;\r\n\r\n\tmsr.host_initiated = false;\r\n\tfor (i = 0; i < count; i++) {\r\n\t\tif (kvm_vcpu_read_guest(vcpu, gpa + i * sizeof(e),\r\n\t\t\t\t\t&e, sizeof(e))) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s cannot read MSR entry (%u, 0x%08llx)\\n\",\r\n\t\t\t\t__func__, i, gpa + i * sizeof(e));\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t\tif (nested_vmx_load_msr_check(vcpu, &e)) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s check failed (%u, 0x%x, 0x%x)\\n\",\r\n\t\t\t\t__func__, i, e.index, e.reserved);\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t\tmsr.index = e.index;\r\n\t\tmsr.data = e.value;\r\n\t\tif (kvm_set_msr(vcpu, &msr)) {\r\n\t\t\tpr_debug_ratelimited(\r\n\t\t\t\t\"%s cannot write MSR (%u, 0x%x, 0x%llx)\\n\",\r\n\t\t\t\t__func__, i, e.index, e.value);\r\n\t\t\tgoto fail;\r\n\t\t}\r\n\t}\r\n\treturn 0;\r\nfail:\r\n\treturn i + 1;\r\n}",
           "verdict": "safe",
-          "confidence": 0.5920999646186829,
-          "prob_vulnerable": 0.40790000557899475
+          "confidence": 0.5921000838279724,
+          "prob_vulnerable": 0.4078999161720276
         },
         {
           "name": "userns_install",
@@ -347,23 +347,23 @@
           "cwe_topk": [
             {
               "cwe": "CWE-264",
-              "prob": 0.9296339750289917
+              "prob": 0.9296342730522156
             },
             {
               "cwe": "CWE-399",
-              "prob": 0.049471981823444366
+              "prob": 0.04947187751531601
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.008260460570454597
+              "prob": 0.008260440081357956
             },
             {
               "cwe": "CWE-200",
-              "prob": 0.004452884197235107
+              "prob": 0.004452872555702925
             },
             {
               "cwe": "OTHER",
-              "prob": 0.003186936955899
+              "prob": 0.0031869318336248398
             }
           ]
         },
@@ -379,29 +379,29 @@
           "parent_name": null,
           "code": "key_ref_t keyring_search(key_ref_t keyring,\r\n\t\t\t struct key_type *type,\r\n\t\t\t const char *description)\r\n{\r\n\tstruct keyring_search_context ctx = {\r\n \t\t.index_key.type\t\t= type,\r\n \t\t.index_key.description\t= description,\r\n \t\t.cred\t\t\t= current_cred(),\r\n\t\t.match_data.cmp\t\t= type->match,\r\n \t\t.match_data.raw_data\t= description,\r\n \t\t.match_data.lookup_type\t= KEYRING_SEARCH_LOOKUP_DIRECT,\r\n \t\t.flags\t\t\t= KEYRING_SEARCH_DO_STATE_CHECK,\r\n \t};\r\n \tkey_ref_t key;\r\n \tint ret;\r\n \r\n\tif (!ctx.match_data.cmp)\r\n\t\treturn ERR_PTR(-ENOKEY);\r\n \tif (type->match_preparse) {\r\n \t\tret = type->match_preparse(&ctx.match_data);\r\n \t\tif (ret < 0)\r\n\t\t\treturn ERR_PTR(ret);\r\n\t}\r\n\r\n\tkey = keyring_search_aux(keyring, &ctx);\r\n\r\n\tif (type->match_free)\r\n\t\ttype->match_free(&ctx.match_data);\r\n\treturn key;\r\n}",
           "verdict": "vulnerable",
-          "confidence": 0.9093015789985657,
-          "prob_vulnerable": 0.9093015789985657,
+          "confidence": 0.9093014597892761,
+          "prob_vulnerable": 0.9093014597892761,
           "cwe": "CWE-476",
           "cwe_topk": [
             {
               "cwe": "CWE-476",
-              "prob": 0.7726037502288818
+              "prob": 0.7726040482521057
             },
             {
               "cwe": "OTHER",
-              "prob": 0.10490268468856812
+              "prob": 0.10490261763334274
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.036467619240283966
+              "prob": 0.036467570811510086
             },
             {
               "cwe": "CWE-200",
-              "prob": 0.02263760007917881
+              "prob": 0.0226376224309206
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.018463043496012688
+              "prob": 0.01846306025981903
             }
           ]
         },
@@ -417,29 +417,29 @@
           "parent_name": null,
           "code": "void common_timer_get(struct k_itimer *timr, struct itimerspec64 *cur_setting)\r\n{\r\n\tconst struct k_clock *kc = timr->kclock;\r\n\tktime_t now, remaining, iv;\r\n \tstruct timespec64 ts64;\r\n \tbool sig_none;\r\n \r\n\tsig_none = (timr->it_sigev_notify & ~SIGEV_THREAD_ID) == SIGEV_NONE;\r\n \tiv = timr->it_interval;\r\n \r\n \t/* interval timer ? */\r\n\tif (iv) {\r\n\t\tcur_setting->it_interval = ktime_to_timespec64(iv);\r\n\t} else if (!timr->it_active) {\r\n\t\t/*\r\n\t\t * SIGEV_NONE oneshot timers are never queued. Check them\r\n\t\t * below.\r\n\t\t */\r\n\t\tif (!sig_none)\r\n\t\t\treturn;\r\n\t}\r\n\r\n\t/*\r\n\t * The timespec64 based conversion is suboptimal, but it's not\r\n\t * worth to implement yet another callback.\r\n\t */\r\n\tkc->clock_get(timr->it_clock, &ts64);\r\n\tnow = timespec64_to_ktime(ts64);\r\n\r\n\t/*\r\n\t * When a requeue is pending or this is a SIGEV_NONE timer move the\r\n\t * expiry time forward by intervals, so expiry is > now.\r\n\t */\r\n\tif (iv && (timr->it_requeue_pending & REQUEUE_PENDING || sig_none))\r\n\t\ttimr->it_overrun += kc->timer_forward(timr, now);\r\n\r\n\tremaining = kc->timer_remaining(timr, now);\r\n\t/* Return 0 only, when the timer is expired and not pending */\r\n\tif (remaining <= 0) {\r\n\t\t/*\r\n\t\t * A single shot SIGEV_NONE timer must return 0, when\r\n\t\t * it is expired !\r\n\t\t */\r\n\t\tif (!sig_none)\r\n\t\t\tcur_setting->it_value.tv_nsec = 1;\r\n\t} else {\r\n\t\tcur_setting->it_value = ktime_to_timespec64(remaining);\r\n\t}\r\n}",
           "verdict": "vulnerable",
-          "confidence": 0.7882513403892517,
-          "prob_vulnerable": 0.7882513403892517,
+          "confidence": 0.7882516384124756,
+          "prob_vulnerable": 0.7882516384124756,
           "cwe": "CWE-125",
           "cwe_topk": [
             {
               "cwe": "CWE-125",
-              "prob": 0.9125308990478516
+              "prob": 0.9125303626060486
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.044816602021455765
+              "prob": 0.04481698200106621
             },
             {
               "cwe": "CWE-190",
-              "prob": 0.014549666084349155
+              "prob": 0.01454975176602602
             },
             {
               "cwe": "CWE-787",
-              "prob": 0.014200011268258095
+              "prob": 0.014200125820934772
             },
             {
               "cwe": "OTHER",
-              "prob": 0.006305755581706762
+              "prob": 0.0063057648949325085
             }
           ]
         },
@@ -455,13 +455,13 @@
           "parent_name": null,
           "code": "static void __dentry_kill(struct dentry *dentry)\r\n{\r\n\tstruct dentry *parent = NULL;\r\n\tbool can_free = true;\r\n\tif (!IS_ROOT(dentry))\r\n\t\tparent = dentry->d_parent;\r\n\r\n\t/*\r\n\t * The dentry is now unrecoverably dead to the world.\r\n\t */\r\n\tlockref_mark_dead(&dentry->d_lockref);\r\n\r\n\t/*\r\n\t * inform the fs via d_prune that this dentry is about to be\r\n\t * unhashed and destroyed.\r\n\t */\r\n\tif (dentry->d_flags & DCACHE_OP_PRUNE)\r\n\t\tdentry->d_op->d_prune(dentry);\r\n\r\n\tif (dentry->d_flags & DCACHE_LRU_LIST) {\r\n\t\tif (!(dentry->d_flags & DCACHE_SHRINK_LIST))\r\n\t\t\td_lru_del(dentry);\r\n\t}\r\n\t/* if it was on the hash then remove it */\r\n\t__d_drop(dentry);\r\n\tdentry_unlist(dentry, parent);\r\n\tif (parent)\r\n\t\tspin_unlock(&parent->d_lock);\r\n\tif (dentry->d_inode)\r\n\t\tdentry_unlink_inode(dentry);\r\n\telse\r\n\t\tspin_unlock(&dentry->d_lock);\r\n\tthis_cpu_dec(nr_dentry);\r\n\tif (dentry->d_op && dentry->d_op->d_release)\r\n\t\tdentry->d_op->d_release(dentry);\r\n\r\n\tspin_lock(&dentry->d_lock);\r\n\tif (dentry->d_flags & DCACHE_SHRINK_LIST) {\r\n\t\tdentry->d_flags |= DCACHE_MAY_FREE;\r\n\t\tcan_free = false;\r\n\t}\r\n\tspin_unlock(&dentry->d_lock);\r\n\tif (likely(can_free))\r\n\t\tdentry_free(dentry);\r\n}",
           "verdict": "safe",
-          "confidence": 0.519498348236084,
-          "prob_vulnerable": 0.4805016815662384
+          "confidence": 0.5194982290267944,
+          "prob_vulnerable": 0.48050177097320557
         }
       ]
     },
     {
-      "path": "mujs.c",
+      "path": "test_06.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1478,
@@ -487,30 +487,30 @@
           "cwe_topk": [
             {
               "cwe": "CWE-119",
-              "prob": 0.6926265954971313
+              "prob": 0.6926258206367493
             },
             {
               "cwe": "CWE-125",
-              "prob": 0.14856396615505219
+              "prob": 0.1485644280910492
             },
             {
               "cwe": "CWE-476",
-              "prob": 0.10800701379776001
+              "prob": 0.10800730437040329
             },
             {
               "cwe": "OTHER",
-              "prob": 0.012437044642865658
+              "prob": 0.012437076307833195
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.009646091610193253
+              "prob": 0.00964610930532217
             }
           ]
         }
       ]
     },
     {
-      "path": "openssl.c",
+      "path": "test_07.c",
       "language": "c",
       "parse_ok": false,
       "num_bytes": 3954,
@@ -530,29 +530,29 @@
           "parent_name": null,
           "code": "SRP_user_pwd *SRP_VBASE_get_by_user(SRP_VBASE *vb, char *username)\r\n {\r\n     int i;\r\n     SRP_user_pwd *user;\r\n    unsigned char digv[SHA_DIGEST_LENGTH];\r\n    unsigned char digs[SHA_DIGEST_LENGTH];\r\n    EVP_MD_CTX ctxt;\r\n \r\n     if (vb == NULL)\r\n         return NULL;\r\n     for (i = 0; i < sk_SRP_user_pwd_num(vb->users_pwd); i++) {\r\n         user = sk_SRP_user_pwd_value(vb->users_pwd, i);\r\n         if (strcmp(user->id, username) == 0)\r\n             return user;\r\n     }\r\n     if ((vb->seed_key == NULL) ||\r\n         (vb->default_g == NULL) || (vb->default_N == NULL))\r\n         return NULL;\r\n        if (!(len = t_fromb64(tmp, N)))\r\n            goto err;\r\n        N_bn = BN_bin2bn(tmp, len, NULL);\r\n        if (!(len = t_fromb64(tmp, g)))\r\n            goto err;\r\n        g_bn = BN_bin2bn(tmp, len, NULL);\r\n        defgNid = \"*\";\r\n    }",
           "verdict": "vulnerable",
-          "confidence": 0.8725183010101318,
-          "prob_vulnerable": 0.8725183010101318,
+          "confidence": 0.8725183606147766,
+          "prob_vulnerable": 0.8725183606147766,
           "cwe": "CWE-399",
           "cwe_topk": [
             {
               "cwe": "CWE-399",
-              "prob": 0.712425708770752
+              "prob": 0.712424635887146
             },
             {
               "cwe": "CWE-200",
-              "prob": 0.22919316589832306
+              "prob": 0.2291940301656723
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.018643967807292938
+              "prob": 0.0186440572142601
             },
             {
               "cwe": "OTHER",
-              "prob": 0.01621941663324833
+              "prob": 0.016219500452280045
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.014990442432463169
+              "prob": 0.014990528114140034
             }
           ]
         },
@@ -574,23 +574,23 @@
           "cwe_topk": [
             {
               "cwe": "CWE-190",
-              "prob": 0.9788200259208679
+              "prob": 0.9788199067115784
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.005172111093997955
+              "prob": 0.005172091536223888
             },
             {
               "cwe": "CWE-89",
-              "prob": 0.004432019777595997
+              "prob": 0.004432040732353926
             },
             {
               "cwe": "CWE-310",
-              "prob": 0.0029139858670532703
+              "prob": 0.0029139830730855465
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.0019625318236649036
+              "prob": 0.0019625257700681686
             }
           ]
         },
@@ -606,31 +606,537 @@
           "parent_name": null,
           "code": "int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,\r\n                      const unsigned char *in, int inl)\r\n{\r\n    int i, j, bl;\r\n\r\n    if (ctx->cipher->flags & EVP_CIPH_FLAG_CUSTOM_CIPHER) {\r\n        i = ctx->cipher->do_cipher(ctx, out, in, inl);\r\n        if (i < 0)\r\n            return 0;\r\n        else\r\n            *outl = i;\r\n        return 1;\r\n    }\r\n\r\n    if (inl <= 0) {\r\n        *outl = 0;\r\n        return inl == 0;\r\n    }\r\n\r\n    if (ctx->buf_len == 0 && (inl & (ctx->block_mask)) == 0) {\r\n        if (ctx->cipher->do_cipher(ctx, out, in, inl)) {\r\n            *outl = inl;\r\n            return 1;\r\n        } else {\r\n            *outl = 0;\r\n            return 0;\r\n        }\r\n    }\r\n    i = ctx->buf_len;\r\n     bl = ctx->cipher->block_size;\r\n     OPENSSL_assert(bl <= (int)sizeof(ctx->buf));\r\n     if (i != 0) {\r\n        if (i + inl < bl) {\r\n             memcpy(&(ctx->buf[i]), in, inl);\r\n             ctx->buf_len += inl;\r\n             *outl = 0;\r\n            return 1;\r\n        } else {\r\n            j = bl - i;\r\n            memcpy(&(ctx->buf[i]), in, j);\r\n            if (!ctx->cipher->do_cipher(ctx, out, ctx->buf, bl))\r\n                return 0;\r\n            inl -= j;\r\n            in += j;\r\n            out += bl;\r\n            *outl = bl;\r\n        }\r\n    } else\r\n        *outl = 0;\r\n    i = inl & (bl - 1);\r\n    inl -= i;\r\n    if (inl > 0) {\r\n        if (!ctx->cipher->do_cipher(ctx, out, in, inl))\r\n            return 0;\r\n        *outl += inl;\r\n    }\r\n\r\n    if (i != 0)\r\n        memcpy(ctx->buf, &(in[inl]), i);\r\n    ctx->buf_len = i;\r\n    return 1;\r\n}",
           "verdict": "vulnerable",
-          "confidence": 0.8644979000091553,
-          "prob_vulnerable": 0.8644979000091553,
+          "confidence": 0.8644980192184448,
+          "prob_vulnerable": 0.8644980192184448,
           "cwe": "CWE-189",
           "cwe_topk": [
             {
               "cwe": "CWE-189",
-              "prob": 0.8459954857826233
+              "prob": 0.845995306968689
             },
             {
               "cwe": "CWE-119",
-              "prob": 0.09302805364131927
+              "prob": 0.09302820265293121
             },
             {
               "cwe": "CWE-200",
-              "prob": 0.01503838412463665
+              "prob": 0.015038423240184784
             },
             {
               "cwe": "CWE-20",
-              "prob": 0.01340731792151928
+              "prob": 0.013407327234745026
             },
             {
               "cwe": "CWE-399",
-              "prob": 0.012484529055655003
+              "prob": 0.012484543956816196
             }
           ]
+        }
+      ]
+    },
+    {
+      "path": "test_08.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2428,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "usbip_recv_xbuff",
+          "start_line": 11,
+          "end_line": 46,
+          "start_byte": 573,
+          "end_byte": 1317,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb)\n{\n\tint ret;\n\tint size;\n\n\tif (ud->side == USBIP_STUB) {\n\t\t/* the direction of urb must be OUT. */\n\t\tif (usb_pipein(urb->pipe))\n\t\t\treturn 0;\n\n\t\tsize = urb->transfer_buffer_length;\n\t} else {\n\t\t/* the direction of urb must be IN. */\n\t\tif (usb_pipeout(urb->pipe))\n\t\t\treturn 0;\n\n\t\tsize = urb->actual_length;\n\t}\n\n\t/* no need to recv xbuff */\n \tif (!(size > 0))\n \t\treturn 0;\n \n \tret = usbip_recv(ud->tcp_socket, urb->transfer_buffer, size);\n \tif (ret != size) {\n \t\tdev_err(&urb->dev->dev, \"recv xbuf, %d\\n\", ret);\n\t\tif (ud->side == USBIP_STUB) {\n\t\t\tusbip_event_add(ud, SDEV_EVENT_ERROR_TCP);\n\t\t} else {\n\t\t\tusbip_event_add(ud, VDEV_EVENT_ERROR_TCP);\n\t\t\treturn -EPIPE;\n\t\t}\n\t}\n\n\treturn ret;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9161795973777771,
+          "prob_vulnerable": 0.9161795973777771,
+          "cwe": "CWE-119",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-119",
+              "prob": 0.7195727825164795
+            },
+            {
+              "cwe": "CWE-125",
+              "prob": 0.13608159124851227
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.060723159462213516
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.04496008902788162
+            },
+            {
+              "cwe": "CWE-476",
+              "prob": 0.022700944915413857
+            }
+          ]
+        },
+        {
+          "name": "common_timer_set",
+          "start_line": 48,
+          "end_line": 84,
+          "start_byte": 1319,
+          "end_byte": 2427,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int common_timer_set(struct k_itimer *timr, int flags,\n\t\t     struct itimerspec64 *new_setting,\n\t\t     struct itimerspec64 *old_setting)\n{\n\tconst struct k_clock *kc = timr->kclock;\n\tbool sigev_none;\n\tktime_t expires;\n\n\tif (old_setting)\n\t\tcommon_timer_get(timr, old_setting);\n\n\t/* Prevent rearming by clearing the interval */\n\ttimr->it_interval = 0;\n\t/*\n\t * Careful here. On SMP systems the timer expiry function could be\n\t * active and spinning on timr->it_lock.\n\t */\n\tif (kc->timer_try_to_cancel(timr) < 0)\n\t\treturn TIMER_RETRY;\n\n\ttimr->it_active = 0;\n\ttimr->it_requeue_pending = (timr->it_requeue_pending + 2) &\n\t\t~REQUEUE_PENDING;\n\ttimr->it_overrun_last = 0;\n\n\t/* Switch off the timer when it_value is zero */\n\tif (!new_setting->it_value.tv_sec && !new_setting->it_value.tv_nsec)\n\t\treturn 0;\n \n \ttimr->it_interval = timespec64_to_ktime(new_setting->it_interval);\n \texpires = timespec64_to_ktime(new_setting->it_value);\n\tsigev_none = (timr->it_sigev_notify & ~SIGEV_THREAD_ID) == SIGEV_NONE;\n \n \tkc->timer_arm(timr, expires, flags & TIMER_ABSTIME, sigev_none);\n \ttimr->it_active = !sigev_none;\n\treturn 0;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.914093017578125,
+          "prob_vulnerable": 0.914093017578125,
+          "cwe": "CWE-125",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-125",
+              "prob": 0.8799355626106262
+            },
+            {
+              "cwe": "CWE-190",
+              "prob": 0.05652787536382675
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.023969478905200958
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.01573408581316471
+            },
+            {
+              "cwe": "CWE-416",
+              "prob": 0.004745703190565109
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "test_09.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1419,
+      "function_count": 1,
+      "suspicious_count": 1,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 11,
+          "end_line": 41,
+          "start_byte": 576,
+          "end_byte": 1418,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ssl_scan_clienthello_custom_tlsext(SSL *s,\n                                              const unsigned char *data,\n                                              const unsigned char *limit,\n                                              int *al)\n{\n    unsigned short type, size, len;\n    /* If resumed session or no custom extensions nothing to do */\n     if (s->hit || s->cert->srv_ext.meths_count == 0)\n         return 1;\n \n    if (data >= limit - 2)\n         return 1;\n     n2s(data, len);\n \n    if (data > limit - len)\n         return 1;\n \n    while (data <= limit - 4) {\n         n2s(data, type);\n         n2s(data, size);\n \n        if (data + size > limit)\n             return 1;\n         if (custom_ext_parse(s, 1 /* server */ , type, data, size, al) <= 0)\n             return 0;\n\n        data += size;\n    }\n\n    return 1;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9297258853912354,
+          "prob_vulnerable": 0.9297258853912354,
+          "cwe": "CWE-190",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-190",
+              "prob": 0.9922184944152832
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.001657772925682366
+            },
+            {
+              "cwe": "CWE-89",
+              "prob": 0.0016267189057543874
+            },
+            {
+              "cwe": "CWE-310",
+              "prob": 0.0009523293701931834
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.0006584577495232224
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "test_10.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2089,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "encrypt",
+          "start_line": 11,
+          "end_line": 45,
+          "start_byte": 582,
+          "end_byte": 1557,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int encrypt(struct blkcipher_desc *desc,\n\t\t   struct scatterlist *dst, struct scatterlist *src,\n\t\t   unsigned int nbytes)\n{\n\tstruct blkcipher_walk walk;\n\tstruct crypto_blkcipher *tfm = desc->tfm;\n\tstruct salsa20_ctx *ctx = crypto_blkcipher_ctx(tfm);\n\tint err;\n\n\tblkcipher_walk_init(&walk, dst, src, nbytes);\n\terr = blkcipher_walk_virt_block(desc, &walk, 64);\n \n \tsalsa20_ivsetup(ctx, walk.iv);\n \n\tif (likely(walk.nbytes == nbytes))\n\t{\n\t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n\t\t\t\t      walk.src.virt.addr, nbytes);\n\t\treturn blkcipher_walk_done(desc, &walk, 0);\n\t}\n \twhile (walk.nbytes >= 64) {\n \t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n \t\t\t\t      walk.src.virt.addr,\n\t\t\t\t      walk.nbytes - (walk.nbytes % 64));\n\t\terr = blkcipher_walk_done(desc, &walk, walk.nbytes % 64);\n\t}\n\n\tif (walk.nbytes) {\n\t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n\t\t\t\t      walk.src.virt.addr, walk.nbytes);\n\t\terr = blkcipher_walk_done(desc, &walk, 0);\n\t}\n\n\treturn err;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9269494414329529,
+          "prob_vulnerable": 0.9269494414329529,
+          "cwe": "CWE-20",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-20",
+              "prob": 0.5068072080612183
+            },
+            {
+              "cwe": "CWE-200",
+              "prob": 0.28232118487358093
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.11512985080480576
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.07286563515663147
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.010838033631443977
+            }
+          ]
+        },
+        {
+          "name": "xfrm_alloc_replay_state_esn",
+          "start_line": 47,
+          "end_line": 72,
+          "start_byte": 1559,
+          "end_byte": 2088,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn,\n\t\t\t\t       struct xfrm_replay_state_esn **preplay_esn,\n \t\t\t\t       struct nlattr *rta)\n {\n \tstruct xfrm_replay_state_esn *p, *pp, *up;\n \n \tif (!rta)\n \t\treturn 0;\n \n \tup = nla_data(rta);\n \n\tp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);\n \tif (!p)\n \t\treturn -ENOMEM;\n \n\tpp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);\n \tif (!pp) {\n \t\tkfree(p);\n \t\treturn -ENOMEM;\n \t}\n \n \t*replay_esn = p;\n \t*preplay_esn = pp;\n \n\treturn 0;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9377728700637817,
+          "prob_vulnerable": 0.9377728700637817,
+          "cwe": "CWE-200",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-200",
+              "prob": 0.9699056148529053
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.008485645055770874
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.005580923054367304
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.00514471298083663
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.003135303733870387
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "test_11.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2796,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "tcp_open",
+          "start_line": 11,
+          "end_line": 56,
+          "start_byte": 576,
+          "end_byte": 1524,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "struct tcp_sock_t *tcp_open(uint16_t port)\n {\n \tstruct tcp_sock_t *this = calloc(1, sizeof *this);\n \tif (this == NULL) {\n\t\tERR(\"callocing this failed\");\n \t\tgoto error;\n \t}\n \n \tthis->sd = -1;\n \tthis->sd = socket(AF_INET6, SOCK_STREAM, 0);\n \tif (this->sd < 0) {\n\t\tERR(\"sockect open failed\");\n \t\tgoto error;\n \t}\n \n\tstruct sockaddr_in6 addr;\n \tmemset(&addr, 0, sizeof addr);\n \taddr.sin6_family = AF_INET6;\n \taddr.sin6_port = htons(port);\n\taddr.sin6_addr = in6addr_any;\n \n \tif (bind(this->sd,\n \t        (struct sockaddr *)&addr,\n \t        sizeof addr) < 0) {\n \t\tif (g_options.only_desired_port == 1)\n\t\t\tERR(\"Bind on port failed. \"\n \t\t\t    \"Requested port may be taken or require root permissions.\");\n \t\tgoto error;\n \t}\n \n \tif (listen(this->sd, HTTP_MAX_PENDING_CONNS) < 0) {\n\t\tERR(\"listen failed on socket\");\n \t\tgoto error;\n \t}\n \n\treturn this;\n\nerror:\n\tif (this != NULL) {\n\t\tif (this->sd != -1) {\n\t\t\tclose(this->sd);\n\t\t}\n\t\tfree(this);\n\t}\n\treturn NULL;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9370606541633606,
+          "prob_vulnerable": 0.9370606541633606,
+          "cwe": "CWE-264",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-264",
+              "prob": 0.6210173964500427
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.24805882573127747
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.08550866693258286
+            },
+            {
+              "cwe": "CWE-200",
+              "prob": 0.017977815121412277
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.008425276726484299
+            }
+          ]
+        },
+        {
+          "name": "preproc_mount_mnt_dir",
+          "start_line": 58,
+          "end_line": 88,
+          "start_byte": 1526,
+          "end_byte": 2795,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void preproc_mount_mnt_dir(void) {\n\tif (!tmpfs_mounted) {\n\t\tif (arg_debug)\n\t\t\tprintf(\"Mounting tmpfs on %s directory\\n\", RUN_MNT_DIR);\n\t\tif (mount(\"tmpfs\", RUN_MNT_DIR, \"tmpfs\", MS_NOSUID | MS_STRICTATIME,  \"mode=755,gid=0\") < 0)\n\t\t\terrExit(\"mounting /run/firejail/mnt\");\n\t\ttmpfs_mounted = 1;\n \t\tfs_logger2(\"tmpfs\", RUN_MNT_DIR);\n \n #ifdef HAVE_SECCOMP\n \t\tif (arg_seccomp_block_secondary)\n \t\t\tcopy_file(PATH_SECCOMP_BLOCK_SECONDARY, RUN_SECCOMP_BLOCK_SECONDARY, getuid(), getgid(), 0644); // root needed\n \t\telse {\n\t\t\tcopy_file(PATH_SECCOMP_32, RUN_SECCOMP_32, getuid(), getgid(), 0644); // root needed\n\t\t}\n\t\tif (arg_allow_debuggers)\n\t\t\tcopy_file(PATH_SECCOMP_DEFAULT_DEBUG, RUN_SECCOMP_CFG, getuid(), getgid(), 0644); // root needed\n\t\telse\n\t\t\tcopy_file(PATH_SECCOMP_DEFAULT, RUN_SECCOMP_CFG, getuid(), getgid(), 0644); // root needed\n\n\t\tif (arg_memory_deny_write_execute)\n\t\t\tcopy_file(PATH_SECCOMP_MDWX, RUN_SECCOMP_MDWX, getuid(), getgid(), 0644); // root needed\n\t\tcreate_empty_file_as_root(RUN_SECCOMP_PROTOCOL, 0644);\n\t\tif (set_perms(RUN_SECCOMP_PROTOCOL, getuid(), getgid(), 0644))\n\t\t\terrExit(\"set_perms\");\n\t\tcreate_empty_file_as_root(RUN_SECCOMP_POSTEXEC, 0644);\n\t\tif (set_perms(RUN_SECCOMP_POSTEXEC, getuid(), getgid(), 0644))\n\t\t\terrExit(\"set_perms\");\n#endif\n\t}\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9237171411514282,
+          "prob_vulnerable": 0.9237171411514282,
+          "cwe": "CWE-284",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-284",
+              "prob": 0.9828117489814758
+            },
+            {
+              "cwe": "CWE-264",
+              "prob": 0.007321035489439964
+            },
+            {
+              "cwe": "CWE-863",
+              "prob": 0.002501741284504533
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.0014688977971673012
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.001117050414904952
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "test_12.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 3658,
+      "function_count": 3,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "shmem_remount_fs",
+          "start_line": 11,
+          "end_line": 47,
+          "start_byte": 582,
+          "end_byte": 1699,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)\n{\n\tstruct shmem_sb_info *sbinfo = SHMEM_SB(sb);\n\tstruct shmem_sb_info config = *sbinfo;\n \tunsigned long inodes;\n \tint error = -EINVAL;\n \n \tif (shmem_parse_options(data, &config, true))\n \t\treturn error;\n \n\tspin_lock(&sbinfo->stat_lock);\n\tinodes = sbinfo->max_inodes - sbinfo->free_inodes;\n\tif (percpu_counter_compare(&sbinfo->used_blocks, config.max_blocks) > 0)\n\t\tgoto out;\n\tif (config.max_inodes < inodes)\n\t\tgoto out;\n\t/*\n\t * Those tests disallow limited->unlimited while any are in use;\n\t * but we must separately disallow unlimited->limited, because\n\t * in that case we have no record of how much is already in use.\n\t */\n\tif (config.max_blocks && !sbinfo->max_blocks)\n\t\tgoto out;\n\tif (config.max_inodes && !sbinfo->max_inodes)\n\t\tgoto out;\n\n\terror = 0;\n\tsbinfo->max_blocks  = config.max_blocks;\n \tsbinfo->max_inodes  = config.max_inodes;\n \tsbinfo->free_inodes = config.max_inodes - inodes;\n \n\tmpol_put(sbinfo->mpol);\n\tsbinfo->mpol        = config.mpol;\t/* transfers initial ref */\n out:\n \tspin_unlock(&sbinfo->stat_lock);\n \treturn error;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9223189353942871,
+          "prob_vulnerable": 0.9223189353942871,
+          "cwe": "CWE-399",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-399",
+              "prob": 0.6808108687400818
+            },
+            {
+              "cwe": "CWE-200",
+              "prob": 0.2539091110229492
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.022880015894770622
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.013402696698904037
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.010823897086083889
+            }
+          ]
+        },
+        {
+          "name": "xfrm_dump_policy",
+          "start_line": 49,
+          "end_line": 69,
+          "start_byte": 1701,
+          "end_byte": 2326,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int xfrm_dump_policy(struct sk_buff *skb, struct netlink_callback *cb)\n {\n \tstruct net *net = sock_net(skb->sk);\n\tstruct xfrm_policy_walk *walk = (struct xfrm_policy_walk *) &cb->args[1];\n \tstruct xfrm_dump_info info;\n \n\tBUILD_BUG_ON(sizeof(struct xfrm_policy_walk) >\n\t\t     sizeof(cb->args) - sizeof(cb->args[0]));\n \tinfo.in_skb = cb->skb;\n \tinfo.out_skb = skb;\n \tinfo.nlmsg_seq = cb->nlh->nlmsg_seq;\n \tinfo.nlmsg_flags = NLM_F_MULTI;\n \n\tif (!cb->args[0]) {\n\t\tcb->args[0] = 1;\n\t\txfrm_policy_walk_init(walk, XFRM_POLICY_TYPE_ANY);\n\t}\n \t(void) xfrm_policy_walk(net, walk, dump_one_policy, &info);\n \n \treturn skb->len;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9334228038787842,
+          "prob_vulnerable": 0.9334228038787842,
+          "cwe": "CWE-416",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-416",
+              "prob": 0.9880708456039429
+            },
+            {
+              "cwe": "CWE-200",
+              "prob": 0.003768355818465352
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.0023484006524086
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.00189328589476645
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.0011154519161209464
+            }
+          ]
+        },
+        {
+          "name": "debugfs_rename",
+          "start_line": 71,
+          "end_line": 112,
+          "start_byte": 2328,
+          "end_byte": 3657,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,\n\t\tstruct dentry *new_dir, const char *new_name)\n {\n \tint error;\n \tstruct dentry *dentry = NULL, *trap;\n\tconst char *old_name;\n \n \ttrap = lock_rename(new_dir, old_dir);\n \t/* Source or destination directories don't exist? */\n\tif (d_really_is_negative(old_dir) || d_really_is_negative(new_dir))\n\t\tgoto exit;\n\t/* Source does not exist, cyclic rename, or mountpoint? */\n\tif (d_really_is_negative(old_dentry) || old_dentry == trap ||\n\t    d_mountpoint(old_dentry))\n\t\tgoto exit;\n\tdentry = lookup_one_len(new_name, new_dir, strlen(new_name));\n\t/* Lookup failed, cyclic rename or target exists? */\n \tif (IS_ERR(dentry) || dentry == trap || d_really_is_positive(dentry))\n \t\tgoto exit;\n \n\told_name = fsnotify_oldname_init(old_dentry->d_name.name);\n \n \terror = simple_rename(d_inode(old_dir), old_dentry, d_inode(new_dir),\n \t\t\t      dentry, 0);\n \tif (error) {\n\t\tfsnotify_oldname_free(old_name);\n \t\tgoto exit;\n \t}\n \td_move(old_dentry, dentry);\n\tfsnotify_move(d_inode(old_dir), d_inode(new_dir), old_name,\n \t\td_is_dir(old_dentry),\n \t\tNULL, old_dentry);\n\tfsnotify_oldname_free(old_name);\n \tunlock_rename(new_dir, old_dir);\n \tdput(dentry);\n \treturn old_dentry;\nexit:\n\tif (dentry && !IS_ERR(dentry))\n\t\tdput(dentry);\n\tunlock_rename(new_dir, old_dir);\n\treturn NULL;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9384645223617554,
+          "prob_vulnerable": 0.9384645223617554,
+          "cwe": "CWE-362",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-362",
+              "prob": 0.1964293271303177
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.17512552440166473
+            },
+            {
+              "cwe": "CWE-59",
+              "prob": 0.16339744627475739
+            },
+            {
+              "cwe": "CWE-284",
+              "prob": 0.12185371667146683
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.08318972587585449
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "test_13.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2213,
+      "function_count": 4,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "av1c_box_size",
+          "start_line": 11,
+          "end_line": 28,
+          "start_byte": 594,
+          "end_byte": 961,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "GF_Err av1c_box_size(GF_Box *s) {\n\tu32 i;\n\tGF_AV1ConfigurationBox *ptr = (GF_AV1ConfigurationBox *)s;\n\n\tif (!ptr->config) {\n\t\tptr->size = 0;\n\t\treturn GF_BAD_PARAM;\n\t}\n\n\tptr->size += 4;\n\n\tfor (i = 0; i < gf_list_count(ptr->config->obu_array); ++i) {\n\t\tGF_AV1_OBUArrayEntry *a = gf_list_get(ptr->config->obu_array, i);\n\t\tptr->size += a->obu_length;\n\t}\n\n\treturn GF_OK;\n}",
+          "verdict": "safe",
+          "confidence": 0.9465493559837341,
+          "prob_vulnerable": 0.05345070734620094
+        },
+        {
+          "name": "BTM_GetSecurityFlagsByTransport",
+          "start_line": 30,
+          "end_line": 46,
+          "start_byte": 963,
+          "end_byte": 1437,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "BOOLEAN BTM_GetSecurityFlagsByTransport (BD_ADDR bd_addr, UINT8 * p_sec_flags,\n                                                tBT_TRANSPORT transport)\n{\n    tBTM_SEC_DEV_REC *p_dev_rec;\n\n if ((p_dev_rec = btm_find_dev (bd_addr)) != NULL)\n {\n if (transport == BT_TRANSPORT_BR_EDR)\n *p_sec_flags = (UINT8) p_dev_rec->sec_flags;\n else\n *p_sec_flags = (UINT8) (p_dev_rec->sec_flags >> 8);\n\n return(TRUE);\n }\n    BTM_TRACE_ERROR (\"BTM_GetSecurityFlags false\");\n return(FALSE);\n}",
+          "verdict": "safe",
+          "confidence": 0.9410449266433716,
+          "prob_vulnerable": 0.05895513296127319
+        },
+        {
+          "name": "cmd_response_body_mime_types_clear",
+          "start_line": 48,
+          "end_line": 61,
+          "start_byte": 1439,
+          "end_byte": 1856,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static const char *cmd_response_body_mime_types_clear(cmd_parms *cmd,\n                                                      void *_dcfg)\n{\n    directory_config *dcfg = (directory_config *)_dcfg;\n    if (dcfg == NULL) return NULL;\n\n    dcfg->of_mime_types_cleared = 1;\n\n    if ((dcfg->of_mime_types != NULL)&&(dcfg->of_mime_types != NOT_SET_P)) {\n        apr_table_clear(dcfg->of_mime_types);\n    }\n\n    return NULL;\n}",
+          "verdict": "safe",
+          "confidence": 0.9404214024543762,
+          "prob_vulnerable": 0.05957856774330139
+        },
+        {
+          "name": "ntop_interface_name2id",
+          "start_line": 63,
+          "end_line": 74,
+          "start_byte": 1858,
+          "end_byte": 2212,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ntop_interface_name2id(lua_State* vm) {\n  char *if_name;\n\n  ntop->getTrace()->traceEvent(TRACE_INFO, \"%s() called\", __FUNCTION__);\n\n  if(ntop_lua_check(vm, __FUNCTION__, 1, LUA_TSTRING)) return(CONST_LUA_ERROR);\n  if_name = (char*)lua_tostring(vm, 1);\n\n  lua_pushinteger(vm, ntop->getInterfaceViewIdByName(if_name));\n\n  return(CONST_LUA_OK);\n}",
+          "verdict": "safe",
+          "confidence": 0.9366246461868286,
+          "prob_vulnerable": 0.06337533891201019
         }
       ]
     }

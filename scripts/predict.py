@@ -122,7 +122,15 @@ class VulnPredictor:
         base_model = _resolve_backbone(base_model)
 
         # ---- 4. 加载分词器（从检查点目录加载，保证与训练一致） ----
-        self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+        # 自动选设备的优先级与 train.py::pick_device 保持一致：CUDA > MPS > CPU
+        if device:
+            self.device = torch.device(device)
+        elif torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
         self.max_length = max_length
         self.max_code_chars = max_code_chars
         self.tokenizer = build_tokenizer(str(self.ckpt))
@@ -151,7 +159,8 @@ class VulnPredictor:
         ----
         np.ndarray
             形状 ``(N, K)``，每行一个样本，K = 类别数。
-            检测任务 K=2（第 1 列是"有漏洞"的概率），分类任务 K=41。
+            检测任务 K=2（第 1 列是"有漏洞"的概率）；
+            分类任务 K=label_map.json 里的类别数（演示模型 28，CVEfixes 41）。
 
         为什么要单独抽出来
         ------------------
@@ -233,7 +242,7 @@ class VulnPredictor:
                     "label": int(order[0]),   # 概率最大的那个类别
                     "cwe": self.id2name.get(int(order[0]), str(order[0])),
                     "confidence": float(p[order[0]]),
-                    # Top-5 候选：CWE 类别有 41 个，只给一个答案不够用，
+                    # Top-5 候选：CWE 类别有几十个，只给一个答案不够用，
                     # 给候选列表让开发者自己判断更有实用价值
                     "topk": [
                         {"cwe": self.id2name.get(int(j), str(j)), "prob": float(p[j])}
@@ -354,7 +363,8 @@ def main() -> None:
     parser.add_argument("--file", default=None, help="从文件读取代码")
     parser.add_argument("--input", default=None, help="批量输入 JSONL（需含 code 字段）")
     parser.add_argument("--output", default=None, help="批量输出 JSONL")
-    parser.add_argument("--device", default=None, help="cpu | cuda | cuda:1")
+    parser.add_argument("--device", default=None,
+                        help="cpu | cuda | mps | cuda:1，默认自动（CUDA > MPS > CPU）")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--threshold", type=float, default=None,
                         help="检测任务的判定阈值（默认读 best/threshold.json，没有则 0.5）")

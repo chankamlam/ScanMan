@@ -1,11 +1,11 @@
 # 数据集说明（Dataset Card）
 
-本目录记录 `vuln_bert` 项目所使用的漏洞数据集，包括来源、许可证、字段、规模与构建方式。
+本目录记录 ScanMan 项目所使用的漏洞数据集，包括来源、许可证、字段、规模与构建方式。
 
-> **本项目只使用 CVEfixes 一个数据源。**
-> BigVul、DiverseVul、CodeXGLUE 以及四源合并版本已从代码和数据中移除；
-> 如需重新引入，在 `scripts/build_dataset.py` 的 `BUILDERS` 中注册新的构建器即可，
-> 其余流程（过滤 / 截断 / 去重 / 分组划分 / 标签编码）都与数据源无关。
+> **构建器支持 4 个数据源及四源合并版**（`cvefixes` / `bigvul` / `diversevul` /
+> `codexglue` / `merged`），见 `scripts/build_dataset.py` 的 `BUILDERS`。
+> **下载脚本目前只提供 CVEfixes**（`python scripts/download_data.py --datasets cvefixes`），
+> 其余数据源需自行按构建器要求的字段与文件布局准备到 `data/raw/` 下。
 
 ---
 
@@ -14,10 +14,19 @@
 | 数据源 | 原始数据 | 检测样本（二分类） | 分类样本（CWE 多分类） | 类别数 |
 |--------|----------|-------------------|----------------------|--------|
 | CVEfixes | 13,000 条 CVE 修复记录 | **18,925** | **7,291** | 40 个 CWE（41 类） |
+| BigVul | 223,003 个函数 / 3,754 CVE | **174,161** | **7,346** | 26 |
+| DiverseVul | 523,956 个函数 / 933 项目 | **505,690** | —（无 CWE 字段） | — |
+| CodeXGLUE | 27,318 个函数 | **27,254** | —（仅二分类） | — |
+| **merged** | 四源合并 | **539,124** | **14,637** | 40 |
 
-**磁盘占用**：`data/raw` 1.1 GB，`data/processed` 56 MB。
+> 上表为各源的构建规模；`merged` 逐源合并后再统一去重、按 `group_id` 划分。
+> 现有演示报告使用的 `merged_top27` 分类数据是 `scripts/relabel_classes.py --top-k 27`
+> 在 `merged` 分类数据上重标得到的（27 个 CWE + `OTHER`，共 28 类）。
 
-**划分明细（实测）**
+**磁盘占用**：`data/raw` 约 2.1 GB，`data/processed` 约 1.9 GB。`data/raw/` 与
+`data/processed/` 均不纳入 Git，需用下载脚本或 `scripts/build_dataset.py` 重新准备。
+
+**CVEfixes 划分明细（实测）**
 
 | 任务 | train | val | test | 正例率 |
 |------|-------|-----|------|--------|

@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "tool": "scanman",
+  "generated_at": "2026-09-21T22:03:54+08:00",
+  "root": "D:\\Dev\\Projects\\ScanMan\\demo_real",
+  "checkpoint": "outputs/merged_detection_codebert/best",
+  "threshold": 0.6699999999999999,
+  "classifier_checkpoint": "outputs/merged_top27_codebert_e20/best",
+  "summary": {
+    "files_scanned": 2,
+    "files_skipped": 0,
+    "functions_total": 8,
+    "functions_suspicious": 7,
+    "functions_classified": 7,
+    "languages": {
+      "c": 8
+    }
+  },
+  "skipped": [],
+  "files": [
+    {
+      "path": "libgd.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5949,
+      "function_count": 4,
+      "suspicious_count": 4,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "gdImageCropThreshold",
+          "start_line": 9,
+          "end_line": 78,
+          "start_byte": 289,
+          "end_byte": 1961,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "BGD_DECLARE(gdImagePtr) gdImageCropThreshold(gdImagePtr im, const unsigned int color, const float threshold)\r\n{\r\n\tconst int width = gdImageSX(im);\r\n\tconst int height = gdImageSY(im);\r\n\r\n\tint x,y;\r\n\tint match;\r\n\tgdRect crop;\r\n\r\n\tcrop.x = 0;\r\n\tcrop.y = 0;\r\n\tcrop.width = 0;\r\n\tcrop.height = 0;\r\n\r\n\t/* Pierre: crop everything sounds bad */\r\n\tif (threshold > 100.0) {\r\n \t\treturn NULL;\r\n \t}\r\n \r\n \t/* TODO: Add gdImageGetRowPtr and works with ptr at the row level\r\n \t * for the true color and palette images\r\n \t * new formats will simply work with ptr\r\n\t */\r\n\tmatch = 1;\r\n\tfor (y = 0; match && y < height; y++) {\r\n\t\tfor (x = 0; match && x < width; x++) {\r\n\t\t\tmatch = (gdColorMatch(im, color, gdImageGetPixel(im, x,y), threshold)) > 0;\r\n\t\t}\r\n\t}\r\n\r\n\t/* Pierre\r\n\t * Nothing to do > bye\r\n\t * Duplicate the image?\r\n\t */\r\n\tif (y == height - 1) {\r\n\t\treturn NULL;\r\n\t}\r\n\r\n\tcrop.y = y -1;\r\n\tmatch = 1;\r\n\tfor (y = height - 1; match && y >= 0; y--) {\r\n\t\tfor (x = 0; match && x < width; x++) {\r\n\t\t\tmatch = (gdColorMatch(im, color, gdImageGetPixel(im, x, y), threshold)) > 0;\r\n\t\t}\r\n\t}\r\n\r\n\tif (y == 0) {\r\n\t\tcrop.height = height - crop.y + 1;\r\n\t} else {\r\n\t\tcrop.height = y - crop.y + 2;\r\n\t}\r\n\r\n\tmatch = 1;\r\n\tfor (x = 0; match && x < width; x++) {\r\n\t\tfor (y = 0; match && y < crop.y + crop.height - 1; y++) {\r\n\t\t\tmatch = (gdColorMatch(im, color, gdImageGetPixel(im, x,y), threshold)) > 0;\r\n\t\t}\r\n\t}\r\n\tcrop.x = x - 1;\r\n\r\n\tmatch = 1;\r\n\tfor (x = width - 1; match && x >= 0; x--) {\r\n\t\tfor (y = 0; match &&  y < crop.y + crop.height - 1; y++) {\r\n\t\t\tmatch = (gdColorMatch(im, color, gdImageGetPixel(im, x,y), threshold)) > 0;\r\n\t\t}\r\n\t}\r\n\tcrop.width = x - crop.x + 2;\r\n\r\n\treturn gdImageCrop(im, &crop);\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8643565773963928,
+          "prob_vulnerable": 0.8643565773963928,
+          "cwe": "CWE-119",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-119",
+              "prob": 0.4952322244644165
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.14661432802677155
+            },
+            {
+              "cwe": "CWE-190",
+              "prob": 0.12254999577999115
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.08874232321977615
+            },
+            {
+              "cwe": "CWE-125",
+              "prob": 0.07069439440965652
+            }
+          ]
+        },
+        {
+          "name": "_gdContributionsAlloc",
+          "start_line": 81,
+          "end_line": 120,
+          "start_byte": 2020,
+          "end_byte": 3109,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static inline LineContribType * _gdContributionsAlloc(unsigned int line_length, unsigned int windows_size)\r\n {\r\n \tunsigned int u = 0;\r\n \tLineContribType *res;\r\n\tint overflow_error = 0;\r\n \r\n \tres = (LineContribType *) gdMalloc(sizeof(LineContribType));\r\n \tif (!res) {\r\n \t\treturn NULL;\r\n\t}\r\n\tres->WindowSize = windows_size;\r\n\tres->LineLength = line_length;\r\n\tif (overflow2(line_length, sizeof(ContributionType))) {\r\n\t\tgdFree(res);\r\n\t\treturn NULL;\r\n\t}\r\n\tres->ContribRow = (ContributionType *) gdMalloc(line_length * sizeof(ContributionType));\r\n\tif (res->ContribRow == NULL) {\r\n\t\tgdFree(res);\r\n \t\treturn NULL;\r\n \t}\r\n \tfor (u = 0 ; u < line_length ; u++) {\r\n\t\tif (overflow2(windows_size, sizeof(double))) {\r\n\t\t\toverflow_error = 1;\r\n\t\t} else {\r\n\t\t\tres->ContribRow[u].Weights = (double *) gdMalloc(windows_size * sizeof(double));\r\n\t\t}\r\n\t\tif (overflow_error == 1 || res->ContribRow[u].Weights == NULL) {\r\n \t\t\tunsigned int i;\r\n\t\t\tu--;\r\n\t\t\tfor (i=0;i<=u;i++) {\r\n \t\t\t\tgdFree(res->ContribRow[i].Weights);\r\n \t\t\t}\r\n \t\t\tgdFree(res->ContribRow);\r\n\t\t\tgdFree(res);\r\n\t\t\treturn NULL;\r\n\t\t}\r\n\t}\r\n\treturn res;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8958384394645691,
+          "prob_vulnerable": 0.8958384394645691,
+          "cwe": "CWE-119",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-119",
+              "prob": 0.41531121730804443
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.28977903723716736
+            },
+            {
+              "cwe": "CWE-125",
+              "prob": 0.1911136656999588
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.037597231566905975
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.02528703399002552
+            }
+          ]
+        },
+        {
+          "name": "gdImageScale",
+          "start_line": 123,
+          "end_line": 163,
+          "start_byte": 3152,
+          "end_byte": 4221,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "BGD_DECLARE(gdImagePtr) gdImageScale(const gdImagePtr src, const unsigned int new_width, const unsigned int new_height)\r\n{\r\n\tgdImagePtr im_scaled = NULL;\r\n\r\n\tif (src == NULL || (uintmax_t)src->interpolation_id >= GD_METHOD_COUNT) {\r\n\t\treturn NULL;\r\n\t}\r\n\r\n\tif (new_width == 0 || new_height == 0) {\r\n\t\treturn NULL;\r\n\t}\r\n\tif (new_width == gdImageSX(src) && new_height == gdImageSY(src)) {\r\n\t\treturn gdImageClone(src);\r\n\t}\r\n\tswitch (src->interpolation_id) {\r\n\t\t/*Special cases, optimized implementations */\r\n\t\tcase GD_NEAREST_NEIGHBOUR:\r\n\t\t\tim_scaled = gdImageScaleNearestNeighbour(src, new_width, new_height);\r\n\t\t\tbreak;\r\n\r\n\t\tcase GD_BILINEAR_FIXED:\r\n\t\tcase GD_LINEAR:\r\n\t\t\tim_scaled = gdImageScaleBilinear(src, new_width, new_height);\r\n\t\t\tbreak;\r\n\r\n\t\tcase GD_BICUBIC_FIXED:\r\n\t\tcase GD_BICUBIC:\r\n\t\t\tim_scaled = gdImageScaleBicubicFixed(src, new_width, new_height);\r\n\t\t\tbreak;\r\n\r\n\t\t/* generic */\r\n\t\tdefault:\r\n\t\t\tif (src->interpolation == NULL) {\r\n\t\t\t\treturn NULL;\r\n\t\t\t}\r\n\t\t\tim_scaled = gdImageScaleTwoPass(src, new_width, new_height);\r\n\t\t\tbreak;\r\n\t}\r\n\r\n\treturn im_scaled;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.720346987247467,
+          "prob_vulnerable": 0.720346987247467,
+          "cwe": "CWE-415",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-415",
+              "prob": 0.8200562000274658
+            },
+            {
+              "cwe": "CWE-190",
+              "prob": 0.1397002786397934
+            },
+            {
+              "cwe": "CWE-125",
+              "prob": 0.013142204843461514
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.012525571510195732
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.003950430080294609
+            }
+          ]
+        },
+        {
+          "name": "bmp_read_8bit",
+          "start_line": 166,
+          "end_line": 239,
+          "start_byte": 4264,
+          "end_byte": 5947,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int bmp_read_8bit(gdImagePtr im, gdIOCtxPtr infile, bmp_info_t *info, bmp_hdr_t *header)\r\n{\r\n\tint ypos = 0, xpos = 0, row = 0, index = 0;\r\n\tint padding = 0;\r\n\r\n\tif (info->enctype != BMP_BI_RGB && info->enctype != BMP_BI_RLE8) {\r\n\t\treturn 1;\r\n\t}\r\n\r\n\tif (!info->numcolors) {\r\n\t\tinfo->numcolors = 256;\r\n\t} else if (info->numcolors < 0 || info->numcolors > 256) {\r\n\t\treturn 1;\r\n\t}\r\n\r\n\tif (bmp_read_palette(im, infile, info->numcolors, (info->type == BMP_PALETTE_4))) {\r\n\t\treturn 1;\r\n\t}\r\n\r\n\tim->colorsTotal = info->numcolors;\r\n\r\n\t/* There is a chance the data isn't until later, would be weird but it is possible */\r\n\tif (gdTell(infile) != header->off) {\r\n\t\t/* Should make sure we don't seek past the file size */\r\n\t\tif (!gdSeek(infile, header->off)) {\r\n\t\t\treturn 1;\r\n\t\t}\r\n\t}\r\n\r\n\t/* The line must be divisible by 4, else its padded with NULLs */\r\n\tpadding = (1 * info->width) % 4;\r\n\tif (padding) {\r\n\t\tpadding = 4 - padding;\r\n\t}\r\n\r\n\tswitch (info->enctype) {\r\n\tcase BMP_BI_RGB:\r\n\t\tfor (ypos = 0; ypos < info->height; ++ypos) {\r\n\t\t\tif (info->topdown) {\r\n\t\t\t\trow = ypos;\r\n\t\t\t} else {\r\n\t\t\t\trow = info->height - ypos - 1;\r\n\t\t\t}\r\n\r\n\t\t\tfor (xpos = 0; xpos < info->width; ++xpos) {\r\n\t\t\t\tif (!gdGetByte(&index, infile)) {\r\n\t\t\t\t\treturn 1;\r\n\t\t\t\t}\r\n\r\n\t\t\t\tif (im->open[index]) {\r\n\t\t\t\t\tim->open[index] = 0;\r\n\t\t\t\t}\r\n\t\t\t\tgdImageSetPixel(im, xpos, row, index);\r\n\t\t\t}\r\n\t\t\t/* Could create a new variable, but it isn't really worth it */\r\n\t\t\tfor (xpos = padding; xpos > 0; --xpos) {\r\n\t\t\t\tif (!gdGetByte(&index, infile)) {\r\n\t\t\t\t\treturn 1;\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t}\r\n\t\tbreak;\r\n\r\n\tcase BMP_BI_RLE8:\r\n\t\tif (bmp_read_rle(im, infile, info)) {\r\n\t\t\treturn 1;\r\n\t\t}\r\n\t\tbreak;\r\n\r\n\tdefault:\r\n\t\treturn 1;\r\n\t}\r\n\treturn 0;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8491987586021423,
+          "prob_vulnerable": 0.8491987586021423,
+          "cwe": "CWE-476",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-476",
+              "prob": 0.5625486373901367
+            },
+            {
+              "cwe": "CWE-190",
+              "prob": 0.2708643972873688
+            },
+            {
+              "cwe": "CWE-125",
+              "prob": 0.062308914959430695
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.036633484065532684
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.01788940280675888
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "openssl.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 5535,
+      "function_count": 4,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "CRYPTO_get_new_dynlockid",
+          "start_line": 9,
+          "end_line": 68,
+          "start_byte": 276,
+          "end_byte": 2042,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int CRYPTO_get_new_dynlockid(void)\r\n\t{\r\n\tint i = 0;\r\n\tCRYPTO_dynlock *pointer = NULL;\r\n\r\n\tif (dynlock_create_callback == NULL)\r\n\t\t{\r\n\t\tCRYPTOerr(CRYPTO_F_CRYPTO_GET_NEW_DYNLOCKID,CRYPTO_R_NO_DYNLOCK_CREATE_CALLBACK);\r\n\t\treturn(0);\r\n\t\t}\r\n\tCRYPTO_w_lock(CRYPTO_LOCK_DYNLOCK);\r\n\tif ((dyn_locks == NULL)\r\n\t\t&& ((dyn_locks=sk_CRYPTO_dynlock_new_null()) == NULL))\r\n\t\t{\r\n\t\tCRYPTO_w_unlock(CRYPTO_LOCK_DYNLOCK);\r\n\t\tCRYPTOerr(CRYPTO_F_CRYPTO_GET_NEW_DYNLOCKID,ERR_R_MALLOC_FAILURE);\r\n\t\treturn(0);\r\n\t\t}\r\n\tCRYPTO_w_unlock(CRYPTO_LOCK_DYNLOCK);\r\n\r\n\tpointer = (CRYPTO_dynlock *)OPENSSL_malloc(sizeof(CRYPTO_dynlock));\r\n\tif (pointer == NULL)\r\n\t\t{\r\n\t\tCRYPTOerr(CRYPTO_F_CRYPTO_GET_NEW_DYNLOCKID,ERR_R_MALLOC_FAILURE);\r\n\t\treturn(0);\r\n\t\t}\r\n\tpointer->references = 1;\r\n\tpointer->data = dynlock_create_callback(__FILE__,__LINE__);\r\n\tif (pointer->data == NULL)\r\n\t\t{\r\n\t\tOPENSSL_free(pointer);\r\n\t\tCRYPTOerr(CRYPTO_F_CRYPTO_GET_NEW_DYNLOCKID,ERR_R_MALLOC_FAILURE);\r\n\t\treturn(0);\r\n\t\t}\r\n\r\n\tCRYPTO_w_lock(CRYPTO_LOCK_DYNLOCK);\r\n\t/* First, try to find an existing empty slot */\r\n\ti=sk_CRYPTO_dynlock_find(dyn_locks,NULL);\r\n\t/* If there was none, push, thereby creating a new one */\r\n\tif (i == -1)\r\n\t\t/* Since sk_push() returns the number of items on the\r\n\t\t   stack, not the location of the pushed item, we need\r\n\t\t   to transform the returned number into a position,\r\n\t\t   by decreasing it.  */\r\n\t\ti=sk_CRYPTO_dynlock_push(dyn_locks,pointer) - 1;\r\n\telse\r\n\t\t/* If we found a place with a NULL pointer, put our pointer\r\n\t\t   in it.  */\r\n\t\t(void)sk_CRYPTO_dynlock_set(dyn_locks,i,pointer);\r\n\tCRYPTO_w_unlock(CRYPTO_LOCK_DYNLOCK);\r\n\r\n\tif (i == -1)\r\n\t\t{\r\n\t\tdynlock_destroy_callback(pointer->data,__FILE__,__LINE__);\r\n\t\tOPENSSL_free(pointer);\r\n\t\t}\r\n\telse\r\n\t\ti += 1; /* to avoid 0 */\r\n\treturn -i;\r\n\t}",
+          "verdict": "vulnerable",
+          "confidence": 0.7041453719139099,
+          "prob_vulnerable": 0.7041453719139099,
+          "cwe": "CWE-476",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-476",
+              "prob": 0.8314136862754822
+            },
+            {
+              "cwe": "OTHER",
+              "prob": 0.08014295250177383
+            },
+            {
+              "cwe": "CWE-310",
+              "prob": 0.019664116203784943
+            },
+            {
+              "cwe": "CWE-415",
+              "prob": 0.018448617309331894
+            },
+            {
+              "cwe": "CWE-416",
+              "prob": 0.014543389901518822
+            }
+          ]
+        },
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 71,
+          "end_line": 101,
+          "start_byte": 2101,
+          "end_byte": 2973,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ssl_scan_clienthello_custom_tlsext(SSL *s,\r\n                                              const unsigned char *data,\r\n                                              const unsigned char *limit,\r\n                                              int *al)\r\n{\r\n    unsigned short type, size, len;\r\n    /* If resumed session or no custom extensions nothing to do */\r\n     if (s->hit || s->cert->srv_ext.meths_count == 0)\r\n         return 1;\r\n \r\n    if (data >= limit - 2)\r\n         return 1;\r\n     n2s(data, len);\r\n \r\n    if (data > limit - len)\r\n         return 1;\r\n \r\n    while (data <= limit - 4) {\r\n         n2s(data, type);\r\n         n2s(data, size);\r\n \r\n        if (data + size > limit)\r\n             return 1;\r\n         if (custom_ext_parse(s, 1 /* server */ , type, data, size, al) <= 0)\r\n             return 0;\r\n\r\n        data += size;\r\n    }\r\n\r\n    return 1;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8563587665557861,
+          "prob_vulnerable": 0.8563587665557861,
+          "cwe": "CWE-190",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-190",
+              "prob": 0.9788199067115784
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.005172091536223888
+            },
+            {
+              "cwe": "CWE-89",
+              "prob": 0.004432040732353926
+            },
+            {
+              "cwe": "CWE-310",
+              "prob": 0.0029139830730855465
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.0019625257700681686
+            }
+          ]
+        },
+        {
+          "name": "EVP_EncryptUpdate",
+          "start_line": 104,
+          "end_line": 165,
+          "start_byte": 3032,
+          "end_byte": 4620,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,\r\n                      const unsigned char *in, int inl)\r\n{\r\n    int i, j, bl;\r\n\r\n    if (ctx->cipher->flags & EVP_CIPH_FLAG_CUSTOM_CIPHER) {\r\n        i = ctx->cipher->do_cipher(ctx, out, in, inl);\r\n        if (i < 0)\r\n            return 0;\r\n        else\r\n            *outl = i;\r\n        return 1;\r\n    }\r\n\r\n    if (inl <= 0) {\r\n        *outl = 0;\r\n        return inl == 0;\r\n    }\r\n\r\n    if (ctx->buf_len == 0 && (inl & (ctx->block_mask)) == 0) {\r\n        if (ctx->cipher->do_cipher(ctx, out, in, inl)) {\r\n            *outl = inl;\r\n            return 1;\r\n        } else {\r\n            *outl = 0;\r\n            return 0;\r\n        }\r\n    }\r\n    i = ctx->buf_len;\r\n     bl = ctx->cipher->block_size;\r\n     OPENSSL_assert(bl <= (int)sizeof(ctx->buf));\r\n     if (i != 0) {\r\n        if (i + inl < bl) {\r\n             memcpy(&(ctx->buf[i]), in, inl);\r\n             ctx->buf_len += inl;\r\n             *outl = 0;\r\n            return 1;\r\n        } else {\r\n            j = bl - i;\r\n            memcpy(&(ctx->buf[i]), in, j);\r\n            if (!ctx->cipher->do_cipher(ctx, out, ctx->buf, bl))\r\n                return 0;\r\n            inl -= j;\r\n            in += j;\r\n            out += bl;\r\n            *outl = bl;\r\n        }\r\n    } else\r\n        *outl = 0;\r\n    i = inl & (bl - 1);\r\n    inl -= i;\r\n    if (inl > 0) {\r\n        if (!ctx->cipher->do_cipher(ctx, out, in, inl))\r\n            return 0;\r\n        *outl += inl;\r\n    }\r\n\r\n    if (i != 0)\r\n        memcpy(ctx->buf, &(in[inl]), i);\r\n    ctx->buf_len = i;\r\n    return 1;\r\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.8644979000091553,
+          "prob_vulnerable": 0.8644979000091553,
+          "cwe": "CWE-189",
+          "cwe_topk": [
+            {
+              "cwe": "CWE-189",
+              "prob": 0.845995306968689
+            },
+            {
+              "cwe": "CWE-119",
+              "prob": 0.09302820265293121
+            },
+            {
+              "cwe": "CWE-200",
+              "prob": 0.015038423240184784
+            },
+            {
+              "cwe": "CWE-20",
+              "prob": 0.013407327234745026
+            },
+            {
+              "cwe": "CWE-399",
+              "prob": 0.012484543956816196
+            }
+          ]
+        },
+        {
+          "name": "EC_POINT_set_affine_coordinates_GFp",
+          "start_line": 168,
+          "end_line": 191,
+          "start_byte": 4663,
+          "end_byte": 5533,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int EC_POINT_set_affine_coordinates_GFp(const EC_GROUP *group,\r\n                                        EC_POINT *point, const BIGNUM *x,\r\n                                        const BIGNUM *y, BN_CTX *ctx)\r\n{\r\n    if (group->meth->point_set_affine_coordinates == 0) {\r\n        ECerr(EC_F_EC_POINT_SET_AFFINE_COORDINATES_GFP,\r\n              ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);\r\n        return 0;\r\n    }\r\n    if (group->meth != point->meth) {\r\n        ECerr(EC_F_EC_POINT_SET_AFFINE_COORDINATES_GFP,\r\n              EC_R_INCOMPATIBLE_OBJECTS);\r\n        return 0;\r\n    }\r\n    if (!group->meth->point_set_affine_coordinates(group, point, x, y, ctx))\r\n        return 0;\r\n\r\n    if (EC_POINT_is_on_curve(group, point, ctx) <= 0) {\r\n        ECerr(EC_F_EC_POINT_SET_AFFINE_COORDINATES_GFP,\r\n              EC_R_POINT_IS_NOT_ON_CURVE);\r\n        return 0;\r\n    }\r\n    return 1;\r\n}",
+          "verdict": "safe",
+          "confidence": 0.6996287107467651,
+          "prob_vulnerable": 0.3003712594509125
+        }
+      ]
+    }
+  ]
+}

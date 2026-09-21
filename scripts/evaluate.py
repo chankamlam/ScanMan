@@ -46,16 +46,20 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # 为了 import predict
 
-from predict import VulnPredictor  # noqa: E402
+# ⚠️ 用限定名 ``scripts.predict``，不要裸写 ``import predict``：
+# scripts/ 与项目根同时在 sys.path 上时，裸 import 会生成两个模块对象、
+# 两个 VulnPredictor 类，isinstance / 身份比较会静默失效（serve.py 的
+# 模块 docstring 第 0 条记了这件事）。
+from scripts.predict import VulnPredictor  # noqa: E402
 from src.config import resolve_path  # noqa: E402
 from src.metrics import (  # noqa: E402
+    SWEEP_THRESHOLDS,
     compute_binary_metrics,
     compute_multiclass_metrics,
     per_class_report,
 )
-from src.utils import get_logger, human_int  # noqa: E402
+from src.utils import get_logger, human_int, to_int_label  # noqa: E402
 
 log = get_logger("evaluate")
 
@@ -75,6 +79,7 @@ def load_dataset(path: Path) -> tuple[list[str], np.ndarray]:
     """
     codes: list[str] = []
     labels: list[int] = []
+    skipped = 0
     with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -83,8 +88,17 @@ def load_dataset(path: Path) -> tuple[list[str], np.ndarray]:
             o = json.loads(line)
             if "label" not in o:
                 continue
+            # label 可能是 "CWE-120" 这类字符串（人工用例），转不了就跳过，
+            # 不要 int() 直接抛 ValueError 把整轮评估打断。
+            lab = to_int_label(o["label"])
+            if lab is None:
+                skipped += 1
+                continue
             codes.append(o.get("code") or "")
-            labels.append(int(o["label"]))
+            labels.append(lab)
+    if skipped:
+        log.warning("有 %s 条样本的 label 不是整数（例如 CWE 名字），已跳过、"
+                    "不计入指标：%s", human_int(skipped), path.name)
     return codes, np.asarray(labels, dtype=int)
 
 
@@ -138,6 +152,8 @@ def main() -> None:
     parser.add_argument("--input", required=True, help="带 label 字段的 JSONL")
     parser.add_argument("--threshold", type=float, default=None,
                         help="检测任务的判定阈值（默认用检查点自带的）")
+    parser.add_argument("--device", default=None,
+                        help="cpu | cuda | mps | cuda:1，默认自动（CUDA > MPS > CPU）")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--sweep", action="store_true", help="额外打印阈值扫描表")
     parser.add_argument("--max-samples", type=int, default=None, help="只评估前 N 条（调试）")
@@ -159,7 +175,8 @@ def main() -> None:
     print(f"样本数   : {human_int(len(y))}")
 
     # ---- 加载模型 ----
-    predictor = VulnPredictor(args.checkpoint, threshold=args.threshold)
+    predictor = VulnPredictor(args.checkpoint, device=args.device,
+                              threshold=args.threshold)
     task = predictor.task
     if task == "detection":
         n_pos = int((y == 1).sum())
@@ -188,7 +205,7 @@ def main() -> None:
             print("\n阈值扫描：")
             print(f"{'阈值':>6}{'precision':>11}{'recall':>9}{'f1':>9}{'漏报FN':>8}{'误报FP':>8}")
             print("-" * 51)
-            for t in (0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10):
+            for t in SWEEP_THRESHOLDS:
                 m = compute_binary_metrics(y, logits, threshold=t)
                 print(f"{t:>6.2f}{m['precision']:>11.4f}{m['recall']:>9.4f}"
                       f"{m['f1']:>9.4f}{m['fn']:>8}{m['fp']:>8}")

@@ -35,9 +35,9 @@
 
 数据只读
 --------
-默认输入都在 workbuddy 工作区（``D:/workbuddy_workspace/vuln_bert``），
-本脚本**只读**它们；``--out`` 经 ``resolve_path`` 一律落在本仓库的
-``outputs/`` 下，绝不写回原处。
+默认输入都在本仓库内（``data/processed/`` 与 ``outputs/``），本脚本**只读**它们；
+``--out`` 经 ``resolve_path`` 一律落在本仓库的 ``outputs/`` 下。
+换数据源/检查点用 ``--train`` / ``--test`` / ``--ckpt`` 覆盖。
 
 用法
 ----
@@ -63,18 +63,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import resolve_path  # noqa: E402
 from src.extract import extract_from_file, supported_extensions  # noqa: E402
 from src.metrics import compute_binary_metrics  # noqa: E402
-from src.utils import ensure_dir, get_logger, human_int, read_jsonl  # noqa: E402
+from src.utils import (  # noqa: E402
+    ensure_dir,
+    get_logger,
+    human_int,
+    read_jsonl,
+    to_int_label,
+)
 
 log = get_logger("spike")
 
-#: workbuddy 工作区（只读）：训练/测试数据与训练好的检查点都在这里。
-WB = Path("D:/workbuddy_workspace/vuln_bert")
+#: 项目根：数据与检查点默认都在本仓库下（相对路径按项目根解析）。
+ROOT = Path(__file__).resolve().parent.parent
 
-DEFAULT_TRAIN = WB / "data/processed/cvefixes_detection_train.jsonl"
-DEFAULT_TEST = WB / "data/processed/cvefixes_detection_test.jsonl"
-DEFAULT_CKPT = WB / "outputs/cvefixes_detection_6ep/best"
-DEFAULT_CASES = Path(__file__).resolve().parent.parent / "docs/test_cases/detection_test_cases.jsonl"
-DEFAULT_SCAN_DIR = Path(__file__).resolve().parent.parent / "src"
+DEFAULT_TRAIN = ROOT / "data/processed/cvefixes_detection_train.jsonl"
+DEFAULT_TEST = ROOT / "data/processed/cvefixes_detection_test.jsonl"
+DEFAULT_CKPT = ROOT / "outputs/cvefixes_detection_6ep/best"
+DEFAULT_CASES = ROOT / "docs/test_cases/detection_test_cases.jsonl"
+DEFAULT_SCAN_DIR = ROOT / "src"
 
 #: "这段代码看起来像函数声明"的正则（只看前 200 字符，够用且快）。
 #:
@@ -229,13 +235,24 @@ def analyse_project(root: Path, max_files: int | None = None) -> dict:
 
 
 def load_labelled(path: Path) -> tuple[list[str], np.ndarray]:
-    """读带 ``label`` 字段的 JSONL，返回 (codes, labels)。"""
+    """读带 ``label`` 字段的 JSONL，返回 (codes, labels)。
+
+    ``label`` 不是整数（如人工用例里的 ``"CWE-120"``）时跳过该条 ——
+    这里算的是二分类指标，字符串标签没法参与比较。
+    """
     codes, labels = [], []
+    skipped = 0
     for rec in read_jsonl(path):
         if "label" not in rec:
             continue
+        lab = to_int_label(rec["label"])
+        if lab is None:
+            skipped += 1
+            continue
         codes.append(rec.get("code") or "")
-        labels.append(int(rec["label"]))
+        labels.append(lab)
+    if skipped:
+        log.warning("%s 里有 %d 条样本的 label 不是整数，已跳过", path.name, skipped)
     return codes, np.asarray(labels, dtype=int)
 
 

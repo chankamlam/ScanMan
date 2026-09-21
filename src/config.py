@@ -74,7 +74,8 @@ DEFAULTS: dict[str, Any] = {
     # ---------------- 数据 ----------------
     "data": {
         # 数据源标识，对应 scripts/build_dataset.py 里注册的构建器
-        # 当前只支持 cvefixes
+        # 可选：cvefixes / bigvul / diversevul / codexglue / merged
+        # （注意 scripts/download_data.py 目前只提供 cvefixes 的下载）
         "source": "cvefixes",
         # 训练 / 验证 / 测试 的划分比例（按 group_id 分组划分）
         "train_ratio": 0.8,

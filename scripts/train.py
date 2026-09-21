@@ -398,6 +398,15 @@ def evaluate(model, loader, cfg, device, precision, task: str, num_labels: int):
         all_logits.append(out["logits"].float().cpu().numpy())
         all_labels.append(labels.numpy())
 
+    if not all_logits:
+        # 空 loader（例如 max_eval_samples=0、或划分后某个 split 为空）会让
+        # np.concatenate 抛 "need at least one array to concatenate" —— 那个
+        # 报错完全看不出原因，这里换成能直接定位的提示。
+        raise ValueError(
+            "评估集为空，无法计算指标。请检查 data.max_eval_samples / max_train_samples "
+            "以及 data/processed/ 下三个 split 是否都有样本。"
+        )
+
     # 把所有 batch 的结果拼成一个完整数组
     logits = np.concatenate(all_logits, axis=0)
     y_true = np.concatenate(all_labels, axis=0)
@@ -449,7 +458,10 @@ def main() -> None:
     parser.add_argument("--output-dir", default=None, help="输出根目录，默认 outputs")
     parser.add_argument("--imbalance", choices=["none", "weighted_loss", "balanced_sampler"],
                         default=None)
-    parser.add_argument("--cpu", action="store_true", help="强制使用 CPU")
+    parser.add_argument("--device", default=None,
+                        help="cpu | cuda | mps | cuda:1，默认自动（CUDA > MPS > CPU）")
+    parser.add_argument("--cpu", action="store_true",
+                        help="强制使用 CPU（等价于 --device cpu，保留给老命令）")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -492,7 +504,15 @@ def main() -> None:
         cfg["training"]["run_name"] = f"{source}_{task}_{cfg['model']['name'].split('/')[-1]}"
 
     set_seed(cfg["seed"])
-    device = torch.device("cpu") if args.cpu else pick_device()
+    if args.cpu and args.device:
+        raise SystemExit("--cpu 与 --device 不能同时使用，请二者只给一个")
+    if args.device:
+        # 显式指定设备：与 predict.py / scan_project.py / serve.py 的 --device 口径一致
+        device = torch.device(args.device)
+    elif args.cpu:
+        device = torch.device("cpu")
+    else:
+        device = pick_device()
     precision = resolve_precision(cfg["training"]["precision"], device)
 
     log.info("=" * 78)
@@ -589,7 +609,10 @@ def main() -> None:
     #   平衡采样  少数类样本被更频繁地抽到，让每个 batch 类别更均衡
     # 两者选一个即可，同时用会过度补偿。
     sampler = None
-    if cfg["data"]["imbalance"] == "balanced_sampler" and task == "detection":
+    # 两个任务都支持：分类任务的长尾（几十个 CWE，最小的类只有几十条）
+    # 恰恰是最需要平衡采样的场景，早先这里只对 detection 生效，
+    # 结果是"传了 --imbalance balanced_sampler 却静默不生效"。
+    if cfg["data"]["imbalance"] == "balanced_sampler":
         labels_arr = np.array([int(r["label"]) for r in train_records])
         counts = np.bincount(labels_arr, minlength=num_labels).astype(float)
         counts[counts == 0] = 1.0
@@ -598,7 +621,8 @@ def main() -> None:
         sampler = WeightedRandomSampler(
             torch.as_tensor(weights, dtype=torch.double), len(weights), replacement=True
         )
-        log.info("启用 WeightedRandomSampler 平衡采样")
+        log.info("启用 WeightedRandomSampler 平衡采样（任务=%s，类别数=%d）",
+                 task, num_labels)
 
     # ---- 建 DataLoader ----
     # 注意 shuffle 和 sampler 不能同时用：用了 sampler 就由它决定顺序

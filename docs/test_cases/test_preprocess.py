@@ -1,7 +1,7 @@
 """预处理单元测试：验证清洗 / 截断 / CWE 规范化 / 标签映射是否与文档一致。
 
 运行方式（不需要 GPU，秒级完成）：
-    cd D:\\workbuddy_workspace\\vuln_bert
+    cd /d <项目根>\ScanMan
     set PYTHONPATH=%CD%
     python docs\\test_cases\\test_preprocess.py
 

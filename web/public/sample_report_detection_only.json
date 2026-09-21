@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
   "tool": "scanman",
-  "generated_at": "2026-09-21T20:28:08+08:00",
+  "generated_at": "2026-09-21T22:03:34+08:00",
   "root": "D:\\Dev\\Projects\\ScanMan\\demo_verified",
   "checkpoint": "outputs/merged_detection_codebert/best",
   "threshold": 0.6699999999999999,
   "classifier_checkpoint": null,
   "summary": {
-    "files_scanned": 7,
+    "files_scanned": 13,
     "files_skipped": 0,
-    "functions_total": 16,
-    "functions_suspicious": 13,
+    "functions_total": 30,
+    "functions_suspicious": 23,
     "functions_classified": 0,
     "languages": {
-      "c": 16
+      "c": 30
     }
   },
   "skipped": [],
   "files": [
     {
-      "path": "curl.c",
+      "path": "test_01.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1206,
@@ -45,7 +45,7 @@
       ]
     },
     {
-      "path": "jasper.c",
+      "path": "test_02.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5782,
@@ -101,7 +101,7 @@
       ]
     },
     {
-      "path": "krb5.c",
+      "path": "test_03.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1200,
@@ -127,7 +127,7 @@
       ]
     },
     {
-      "path": "libgit2.c",
+      "path": "test_04.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 4183,
@@ -168,7 +168,7 @@
       ]
     },
     {
-      "path": "linux.c",
+      "path": "test_05.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5340,
@@ -254,7 +254,7 @@
       ]
     },
     {
-      "path": "mujs.c",
+      "path": "test_06.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1478,
@@ -280,7 +280,7 @@
       ]
     },
     {
-      "path": "openssl.c",
+      "path": "test_07.c",
       "language": "c",
       "parse_ok": false,
       "num_bytes": 3954,
@@ -332,6 +332,282 @@
           "verdict": "vulnerable",
           "confidence": 0.8644980192184448,
           "prob_vulnerable": 0.8644980192184448
+        }
+      ]
+    },
+    {
+      "path": "test_08.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2428,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "usbip_recv_xbuff",
+          "start_line": 11,
+          "end_line": 46,
+          "start_byte": 573,
+          "end_byte": 1317,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb)\n{\n\tint ret;\n\tint size;\n\n\tif (ud->side == USBIP_STUB) {\n\t\t/* the direction of urb must be OUT. */\n\t\tif (usb_pipein(urb->pipe))\n\t\t\treturn 0;\n\n\t\tsize = urb->transfer_buffer_length;\n\t} else {\n\t\t/* the direction of urb must be IN. */\n\t\tif (usb_pipeout(urb->pipe))\n\t\t\treturn 0;\n\n\t\tsize = urb->actual_length;\n\t}\n\n\t/* no need to recv xbuff */\n \tif (!(size > 0))\n \t\treturn 0;\n \n \tret = usbip_recv(ud->tcp_socket, urb->transfer_buffer, size);\n \tif (ret != size) {\n \t\tdev_err(&urb->dev->dev, \"recv xbuf, %d\\n\", ret);\n\t\tif (ud->side == USBIP_STUB) {\n\t\t\tusbip_event_add(ud, SDEV_EVENT_ERROR_TCP);\n\t\t} else {\n\t\t\tusbip_event_add(ud, VDEV_EVENT_ERROR_TCP);\n\t\t\treturn -EPIPE;\n\t\t}\n\t}\n\n\treturn ret;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9161795973777771,
+          "prob_vulnerable": 0.9161795973777771
+        },
+        {
+          "name": "common_timer_set",
+          "start_line": 48,
+          "end_line": 84,
+          "start_byte": 1319,
+          "end_byte": 2427,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "int common_timer_set(struct k_itimer *timr, int flags,\n\t\t     struct itimerspec64 *new_setting,\n\t\t     struct itimerspec64 *old_setting)\n{\n\tconst struct k_clock *kc = timr->kclock;\n\tbool sigev_none;\n\tktime_t expires;\n\n\tif (old_setting)\n\t\tcommon_timer_get(timr, old_setting);\n\n\t/* Prevent rearming by clearing the interval */\n\ttimr->it_interval = 0;\n\t/*\n\t * Careful here. On SMP systems the timer expiry function could be\n\t * active and spinning on timr->it_lock.\n\t */\n\tif (kc->timer_try_to_cancel(timr) < 0)\n\t\treturn TIMER_RETRY;\n\n\ttimr->it_active = 0;\n\ttimr->it_requeue_pending = (timr->it_requeue_pending + 2) &\n\t\t~REQUEUE_PENDING;\n\ttimr->it_overrun_last = 0;\n\n\t/* Switch off the timer when it_value is zero */\n\tif (!new_setting->it_value.tv_sec && !new_setting->it_value.tv_nsec)\n\t\treturn 0;\n \n \ttimr->it_interval = timespec64_to_ktime(new_setting->it_interval);\n \texpires = timespec64_to_ktime(new_setting->it_value);\n\tsigev_none = (timr->it_sigev_notify & ~SIGEV_THREAD_ID) == SIGEV_NONE;\n \n \tkc->timer_arm(timr, expires, flags & TIMER_ABSTIME, sigev_none);\n \ttimr->it_active = !sigev_none;\n\treturn 0;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.914093017578125,
+          "prob_vulnerable": 0.914093017578125
+        }
+      ]
+    },
+    {
+      "path": "test_09.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1419,
+      "function_count": 1,
+      "suspicious_count": 1,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 11,
+          "end_line": 41,
+          "start_byte": 576,
+          "end_byte": 1418,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ssl_scan_clienthello_custom_tlsext(SSL *s,\n                                              const unsigned char *data,\n                                              const unsigned char *limit,\n                                              int *al)\n{\n    unsigned short type, size, len;\n    /* If resumed session or no custom extensions nothing to do */\n     if (s->hit || s->cert->srv_ext.meths_count == 0)\n         return 1;\n \n    if (data >= limit - 2)\n         return 1;\n     n2s(data, len);\n \n    if (data > limit - len)\n         return 1;\n \n    while (data <= limit - 4) {\n         n2s(data, type);\n         n2s(data, size);\n \n        if (data + size > limit)\n             return 1;\n         if (custom_ext_parse(s, 1 /* server */ , type, data, size, al) <= 0)\n             return 0;\n\n        data += size;\n    }\n\n    return 1;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9297258853912354,
+          "prob_vulnerable": 0.9297258853912354
+        }
+      ]
+    },
+    {
+      "path": "test_10.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2089,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "encrypt",
+          "start_line": 11,
+          "end_line": 45,
+          "start_byte": 582,
+          "end_byte": 1557,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int encrypt(struct blkcipher_desc *desc,\n\t\t   struct scatterlist *dst, struct scatterlist *src,\n\t\t   unsigned int nbytes)\n{\n\tstruct blkcipher_walk walk;\n\tstruct crypto_blkcipher *tfm = desc->tfm;\n\tstruct salsa20_ctx *ctx = crypto_blkcipher_ctx(tfm);\n\tint err;\n\n\tblkcipher_walk_init(&walk, dst, src, nbytes);\n\terr = blkcipher_walk_virt_block(desc, &walk, 64);\n \n \tsalsa20_ivsetup(ctx, walk.iv);\n \n\tif (likely(walk.nbytes == nbytes))\n\t{\n\t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n\t\t\t\t      walk.src.virt.addr, nbytes);\n\t\treturn blkcipher_walk_done(desc, &walk, 0);\n\t}\n \twhile (walk.nbytes >= 64) {\n \t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n \t\t\t\t      walk.src.virt.addr,\n\t\t\t\t      walk.nbytes - (walk.nbytes % 64));\n\t\terr = blkcipher_walk_done(desc, &walk, walk.nbytes % 64);\n\t}\n\n\tif (walk.nbytes) {\n\t\tsalsa20_encrypt_bytes(ctx, walk.dst.virt.addr,\n\t\t\t\t      walk.src.virt.addr, walk.nbytes);\n\t\terr = blkcipher_walk_done(desc, &walk, 0);\n\t}\n\n\treturn err;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9269494414329529,
+          "prob_vulnerable": 0.9269494414329529
+        },
+        {
+          "name": "xfrm_alloc_replay_state_esn",
+          "start_line": 47,
+          "end_line": 72,
+          "start_byte": 1559,
+          "end_byte": 2088,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn,\n\t\t\t\t       struct xfrm_replay_state_esn **preplay_esn,\n \t\t\t\t       struct nlattr *rta)\n {\n \tstruct xfrm_replay_state_esn *p, *pp, *up;\n \n \tif (!rta)\n \t\treturn 0;\n \n \tup = nla_data(rta);\n \n\tp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);\n \tif (!p)\n \t\treturn -ENOMEM;\n \n\tpp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);\n \tif (!pp) {\n \t\tkfree(p);\n \t\treturn -ENOMEM;\n \t}\n \n \t*replay_esn = p;\n \t*preplay_esn = pp;\n \n\treturn 0;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9377728700637817,
+          "prob_vulnerable": 0.9377728700637817
+        }
+      ]
+    },
+    {
+      "path": "test_11.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2796,
+      "function_count": 2,
+      "suspicious_count": 2,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "tcp_open",
+          "start_line": 11,
+          "end_line": 56,
+          "start_byte": 576,
+          "end_byte": 1524,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "struct tcp_sock_t *tcp_open(uint16_t port)\n {\n \tstruct tcp_sock_t *this = calloc(1, sizeof *this);\n \tif (this == NULL) {\n\t\tERR(\"callocing this failed\");\n \t\tgoto error;\n \t}\n \n \tthis->sd = -1;\n \tthis->sd = socket(AF_INET6, SOCK_STREAM, 0);\n \tif (this->sd < 0) {\n\t\tERR(\"sockect open failed\");\n \t\tgoto error;\n \t}\n \n\tstruct sockaddr_in6 addr;\n \tmemset(&addr, 0, sizeof addr);\n \taddr.sin6_family = AF_INET6;\n \taddr.sin6_port = htons(port);\n\taddr.sin6_addr = in6addr_any;\n \n \tif (bind(this->sd,\n \t        (struct sockaddr *)&addr,\n \t        sizeof addr) < 0) {\n \t\tif (g_options.only_desired_port == 1)\n\t\t\tERR(\"Bind on port failed. \"\n \t\t\t    \"Requested port may be taken or require root permissions.\");\n \t\tgoto error;\n \t}\n \n \tif (listen(this->sd, HTTP_MAX_PENDING_CONNS) < 0) {\n\t\tERR(\"listen failed on socket\");\n \t\tgoto error;\n \t}\n \n\treturn this;\n\nerror:\n\tif (this != NULL) {\n\t\tif (this->sd != -1) {\n\t\t\tclose(this->sd);\n\t\t}\n\t\tfree(this);\n\t}\n\treturn NULL;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9370606541633606,
+          "prob_vulnerable": 0.9370606541633606
+        },
+        {
+          "name": "preproc_mount_mnt_dir",
+          "start_line": 58,
+          "end_line": 88,
+          "start_byte": 1526,
+          "end_byte": 2795,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "void preproc_mount_mnt_dir(void) {\n\tif (!tmpfs_mounted) {\n\t\tif (arg_debug)\n\t\t\tprintf(\"Mounting tmpfs on %s directory\\n\", RUN_MNT_DIR);\n\t\tif (mount(\"tmpfs\", RUN_MNT_DIR, \"tmpfs\", MS_NOSUID | MS_STRICTATIME,  \"mode=755,gid=0\") < 0)\n\t\t\terrExit(\"mounting /run/firejail/mnt\");\n\t\ttmpfs_mounted = 1;\n \t\tfs_logger2(\"tmpfs\", RUN_MNT_DIR);\n \n #ifdef HAVE_SECCOMP\n \t\tif (arg_seccomp_block_secondary)\n \t\t\tcopy_file(PATH_SECCOMP_BLOCK_SECONDARY, RUN_SECCOMP_BLOCK_SECONDARY, getuid(), getgid(), 0644); // root needed\n \t\telse {\n\t\t\tcopy_file(PATH_SECCOMP_32, RUN_SECCOMP_32, getuid(), getgid(), 0644); // root needed\n\t\t}\n\t\tif (arg_allow_debuggers)\n\t\t\tcopy_file(PATH_SECCOMP_DEFAULT_DEBUG, RUN_SECCOMP_CFG, getuid(), getgid(), 0644); // root needed\n\t\telse\n\t\t\tcopy_file(PATH_SECCOMP_DEFAULT, RUN_SECCOMP_CFG, getuid(), getgid(), 0644); // root needed\n\n\t\tif (arg_memory_deny_write_execute)\n\t\t\tcopy_file(PATH_SECCOMP_MDWX, RUN_SECCOMP_MDWX, getuid(), getgid(), 0644); // root needed\n\t\tcreate_empty_file_as_root(RUN_SECCOMP_PROTOCOL, 0644);\n\t\tif (set_perms(RUN_SECCOMP_PROTOCOL, getuid(), getgid(), 0644))\n\t\t\terrExit(\"set_perms\");\n\t\tcreate_empty_file_as_root(RUN_SECCOMP_POSTEXEC, 0644);\n\t\tif (set_perms(RUN_SECCOMP_POSTEXEC, getuid(), getgid(), 0644))\n\t\t\terrExit(\"set_perms\");\n#endif\n\t}\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9237171411514282,
+          "prob_vulnerable": 0.9237171411514282
+        }
+      ]
+    },
+    {
+      "path": "test_12.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 3658,
+      "function_count": 3,
+      "suspicious_count": 3,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "shmem_remount_fs",
+          "start_line": 11,
+          "end_line": 47,
+          "start_byte": 582,
+          "end_byte": 1699,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)\n{\n\tstruct shmem_sb_info *sbinfo = SHMEM_SB(sb);\n\tstruct shmem_sb_info config = *sbinfo;\n \tunsigned long inodes;\n \tint error = -EINVAL;\n \n \tif (shmem_parse_options(data, &config, true))\n \t\treturn error;\n \n\tspin_lock(&sbinfo->stat_lock);\n\tinodes = sbinfo->max_inodes - sbinfo->free_inodes;\n\tif (percpu_counter_compare(&sbinfo->used_blocks, config.max_blocks) > 0)\n\t\tgoto out;\n\tif (config.max_inodes < inodes)\n\t\tgoto out;\n\t/*\n\t * Those tests disallow limited->unlimited while any are in use;\n\t * but we must separately disallow unlimited->limited, because\n\t * in that case we have no record of how much is already in use.\n\t */\n\tif (config.max_blocks && !sbinfo->max_blocks)\n\t\tgoto out;\n\tif (config.max_inodes && !sbinfo->max_inodes)\n\t\tgoto out;\n\n\terror = 0;\n\tsbinfo->max_blocks  = config.max_blocks;\n \tsbinfo->max_inodes  = config.max_inodes;\n \tsbinfo->free_inodes = config.max_inodes - inodes;\n \n\tmpol_put(sbinfo->mpol);\n\tsbinfo->mpol        = config.mpol;\t/* transfers initial ref */\n out:\n \tspin_unlock(&sbinfo->stat_lock);\n \treturn error;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9223189353942871,
+          "prob_vulnerable": 0.9223189353942871
+        },
+        {
+          "name": "xfrm_dump_policy",
+          "start_line": 49,
+          "end_line": 69,
+          "start_byte": 1701,
+          "end_byte": 2326,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int xfrm_dump_policy(struct sk_buff *skb, struct netlink_callback *cb)\n {\n \tstruct net *net = sock_net(skb->sk);\n\tstruct xfrm_policy_walk *walk = (struct xfrm_policy_walk *) &cb->args[1];\n \tstruct xfrm_dump_info info;\n \n\tBUILD_BUG_ON(sizeof(struct xfrm_policy_walk) >\n\t\t     sizeof(cb->args) - sizeof(cb->args[0]));\n \tinfo.in_skb = cb->skb;\n \tinfo.out_skb = skb;\n \tinfo.nlmsg_seq = cb->nlh->nlmsg_seq;\n \tinfo.nlmsg_flags = NLM_F_MULTI;\n \n\tif (!cb->args[0]) {\n\t\tcb->args[0] = 1;\n\t\txfrm_policy_walk_init(walk, XFRM_POLICY_TYPE_ANY);\n\t}\n \t(void) xfrm_policy_walk(net, walk, dump_one_policy, &info);\n \n \treturn skb->len;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9334228038787842,
+          "prob_vulnerable": 0.9334228038787842
+        },
+        {
+          "name": "debugfs_rename",
+          "start_line": 71,
+          "end_line": 112,
+          "start_byte": 2328,
+          "end_byte": 3657,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,\n\t\tstruct dentry *new_dir, const char *new_name)\n {\n \tint error;\n \tstruct dentry *dentry = NULL, *trap;\n\tconst char *old_name;\n \n \ttrap = lock_rename(new_dir, old_dir);\n \t/* Source or destination directories don't exist? */\n\tif (d_really_is_negative(old_dir) || d_really_is_negative(new_dir))\n\t\tgoto exit;\n\t/* Source does not exist, cyclic rename, or mountpoint? */\n\tif (d_really_is_negative(old_dentry) || old_dentry == trap ||\n\t    d_mountpoint(old_dentry))\n\t\tgoto exit;\n\tdentry = lookup_one_len(new_name, new_dir, strlen(new_name));\n\t/* Lookup failed, cyclic rename or target exists? */\n \tif (IS_ERR(dentry) || dentry == trap || d_really_is_positive(dentry))\n \t\tgoto exit;\n \n\told_name = fsnotify_oldname_init(old_dentry->d_name.name);\n \n \terror = simple_rename(d_inode(old_dir), old_dentry, d_inode(new_dir),\n \t\t\t      dentry, 0);\n \tif (error) {\n\t\tfsnotify_oldname_free(old_name);\n \t\tgoto exit;\n \t}\n \td_move(old_dentry, dentry);\n\tfsnotify_move(d_inode(old_dir), d_inode(new_dir), old_name,\n \t\td_is_dir(old_dentry),\n \t\tNULL, old_dentry);\n\tfsnotify_oldname_free(old_name);\n \tunlock_rename(new_dir, old_dir);\n \tdput(dentry);\n \treturn old_dentry;\nexit:\n\tif (dentry && !IS_ERR(dentry))\n\t\tdput(dentry);\n\tunlock_rename(new_dir, old_dir);\n\treturn NULL;\n}",
+          "verdict": "vulnerable",
+          "confidence": 0.9384645223617554,
+          "prob_vulnerable": 0.9384645223617554
+        }
+      ]
+    },
+    {
+      "path": "test_13.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2213,
+      "function_count": 4,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "av1c_box_size",
+          "start_line": 11,
+          "end_line": 28,
+          "start_byte": 594,
+          "end_byte": 961,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "GF_Err av1c_box_size(GF_Box *s) {\n\tu32 i;\n\tGF_AV1ConfigurationBox *ptr = (GF_AV1ConfigurationBox *)s;\n\n\tif (!ptr->config) {\n\t\tptr->size = 0;\n\t\treturn GF_BAD_PARAM;\n\t}\n\n\tptr->size += 4;\n\n\tfor (i = 0; i < gf_list_count(ptr->config->obu_array); ++i) {\n\t\tGF_AV1_OBUArrayEntry *a = gf_list_get(ptr->config->obu_array, i);\n\t\tptr->size += a->obu_length;\n\t}\n\n\treturn GF_OK;\n}",
+          "verdict": "safe",
+          "confidence": 0.9465493559837341,
+          "prob_vulnerable": 0.05345070734620094
+        },
+        {
+          "name": "BTM_GetSecurityFlagsByTransport",
+          "start_line": 30,
+          "end_line": 46,
+          "start_byte": 963,
+          "end_byte": 1437,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "BOOLEAN BTM_GetSecurityFlagsByTransport (BD_ADDR bd_addr, UINT8 * p_sec_flags,\n                                                tBT_TRANSPORT transport)\n{\n    tBTM_SEC_DEV_REC *p_dev_rec;\n\n if ((p_dev_rec = btm_find_dev (bd_addr)) != NULL)\n {\n if (transport == BT_TRANSPORT_BR_EDR)\n *p_sec_flags = (UINT8) p_dev_rec->sec_flags;\n else\n *p_sec_flags = (UINT8) (p_dev_rec->sec_flags >> 8);\n\n return(TRUE);\n }\n    BTM_TRACE_ERROR (\"BTM_GetSecurityFlags false\");\n return(FALSE);\n}",
+          "verdict": "safe",
+          "confidence": 0.9410449266433716,
+          "prob_vulnerable": 0.05895513296127319
+        },
+        {
+          "name": "cmd_response_body_mime_types_clear",
+          "start_line": 48,
+          "end_line": 61,
+          "start_byte": 1439,
+          "end_byte": 1856,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static const char *cmd_response_body_mime_types_clear(cmd_parms *cmd,\n                                                      void *_dcfg)\n{\n    directory_config *dcfg = (directory_config *)_dcfg;\n    if (dcfg == NULL) return NULL;\n\n    dcfg->of_mime_types_cleared = 1;\n\n    if ((dcfg->of_mime_types != NULL)&&(dcfg->of_mime_types != NOT_SET_P)) {\n        apr_table_clear(dcfg->of_mime_types);\n    }\n\n    return NULL;\n}",
+          "verdict": "safe",
+          "confidence": 0.9404214024543762,
+          "prob_vulnerable": 0.05957856774330139
+        },
+        {
+          "name": "ntop_interface_name2id",
+          "start_line": 63,
+          "end_line": 74,
+          "start_byte": 1858,
+          "end_byte": 2212,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null,
+          "code": "static int ntop_interface_name2id(lua_State* vm) {\n  char *if_name;\n\n  ntop->getTrace()->traceEvent(TRACE_INFO, \"%s() called\", __FUNCTION__);\n\n  if(ntop_lua_check(vm, __FUNCTION__, 1, LUA_TSTRING)) return(CONST_LUA_ERROR);\n  if_name = (char*)lua_tostring(vm, 1);\n\n  lua_pushinteger(vm, ntop->getInterfaceViewIdByName(if_name));\n\n  return(CONST_LUA_OK);\n}",
+          "verdict": "safe",
+          "confidence": 0.9366246461868286,
+          "prob_vulnerable": 0.06337533891201019
         }
       ]
     }

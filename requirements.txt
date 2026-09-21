@@ -39,7 +39,7 @@ tqdm>=4.66
 
 # --- 函数抽取（src/extract.py）---
 # 版本**精确锁定**，不要随手升级：core 与各语言包的 ABI 必须配伍，
-# 下面这一组是本机 py312 实测通过的组合（core 0.26.0 = ABI 15，
+# 下面这一组在 Python 3.12 上实测通过（core 0.26.0 = ABI 15，
 # 其中 c/cpp/php/typescript 是 ABI 14 的老包，python/javascript 是 ABI 15）。
 # 混装出问题时的表现是 import 就报 ABI 版本不符，或者解析结果诡异。
 tree-sitter==0.26.0

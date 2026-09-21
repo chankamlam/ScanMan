@@ -4,7 +4,7 @@ PyTorch 的数据管道由三部分组成：
 
     Dataset    负责"怎么取第 i 条数据"        → VulnDataset
     CollateFn  负责"怎么把一批数据拼成一个张量" → DynamicPaddingCollator
-    DataLoader 负责"多进程读取、打乱、分批"     → 由 train.py 组装
+    DataLoader 负责"多进程读取、打乱、分批"     → 由 scripts/train.py 组装
 
 本模块的设计要点
 ----------------
@@ -23,7 +23,7 @@ from typing import Any, Iterable
 import torch
 from torch.utils.data import Dataset
 
-from .utils import truncate_code
+from .utils import read_jsonl, truncate_code
 
 
 class VulnDataset(Dataset):
@@ -128,7 +128,7 @@ class DynamicPaddingCollator:
     pad_to_multiple_of : int | None
         补齐长度对齐到该值的整数倍，默认 8。
         GPU 对 8 的倍数长度计算效率更高（Tensor Core 要求），
-        所以补到 104 不如补到 104（8 的倍数）来得快。
+        所以补到 100 不如补到 104（8 的倍数）来得快。
 
     为什么需要动态 padding
     ---------------------
@@ -204,16 +204,12 @@ def load_jsonl_records(path: str | Path) -> list[dict[str, Any]]:
         1. 训练时需要 shuffle，必须能随机访问；
         2. 几十万条记录（约 1~2 GB）在现代机器上完全放得下。
     如果数据规模再大一个量级，就该换成 ``datasets`` 库的磁盘映射方案了。
-    """
-    import json
 
-    records: list[dict[str, Any]] = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-    return records
+    实现上直接复用 ``src.utils.read_jsonl``（唯一的 JSONL 解析入口），
+    所以行为与其它脚本一致：空行跳过，**单行损坏也会被跳过**而不中断
+    —— 训练数据由 ``build_dataset.py`` 生成，正常不会出现坏行。
+    """
+    return list(read_jsonl(path))
 
 
 def iter_batches(records: Iterable[dict], batch_size: int) -> Iterable[list[dict]]:
@@ -233,8 +229,11 @@ def iter_batches(records: Iterable[dict], batch_size: int) -> Iterable[list[dict
 
     用途
     ----
-    批量推理时用（不需要 shuffle 和 collate_fn 的场景）。
-    最后一个不足 batch_size 的批次也会被吐出。
+    通用的小工具（不需要 shuffle 和 collate_fn 的场景），最后一个不足
+    ``batch_size`` 的批次也会被吐出。
+
+    注意：目前 ``predict.py`` / ``evaluate.py`` 的批量推理是对 ``list[str]``
+    直接切片，用不到这个（dict 版）迭代器；留着是给后续按记录批处理的脚本用。
     """
     buf: list[dict] = []
     for r in records:

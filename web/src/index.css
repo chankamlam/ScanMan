@@ -81,6 +81,100 @@ body {
   border-radius: var(--r);
 }
 
+/* ============================================================================
+ * 图表配色说明
+ *
+ * 图表是 SVG，色阶要做插值，取值必须是真的色值 —— 所以图表的颜色令牌
+ * 放在 `src/components/charts/chartkit.tsx`，那里是**图表配色的唯一真相源**。
+ *
+ * 特别注意：页面文字的 `--ok: #2e6b52` **不能**用在图表里。
+ * 校验器（dataviz/scripts/validate_palette.js）判它色度 0.076 低于 0.1 下限
+ * —— 在色块里读起来发灰，不如换成项目其它色块显眼。
+ * 图表用的安全色是 `#0e8f5a`（与命中色 `#b02a1f` 配对 CVD ΔE 8.3，全项通过）。
+ * ==========================================================================*/
+
+/* ---- 按钮 ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 8px 12px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: #bcc4c1;
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 主操作只此一个 —— 这一页只有"开始检测"配得上实心强调色 */
+.btn-primary {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+  padding: 9px 12px;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #1a45bb;
+  border-color: #1a45bb;
+}
+
+/* 文字按钮：不该有边框，但要有足够的点击面积 */
+.linkish {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  color: var(--signal);
+  cursor: pointer;
+  font-family: inherit;
+}
+.linkish:hover {
+  text-decoration: underline;
+}
+
+/* ---- 左列的文件行 ---- */
+.file-row:hover {
+  background: #f8fafb;
+}
+/* 移除按钮平时隐形，悬停在行上才出现 —— 清单要保持克制 */
+.row-x {
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.file-row:hover .row-x {
+  opacity: 1;
+}
+.row-x:hover {
+  color: var(--flag);
+  background: var(--flag-bg);
+}
+
+.fn-row:hover {
+  background: #f8fafb !important;
+}
+
 /* ---- 键盘焦点必须看得见（accessibility 底线）---- */
 :focus-visible {
   outline: 2px solid var(--signal);

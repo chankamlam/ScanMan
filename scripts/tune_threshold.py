@@ -52,6 +52,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import resolve_path  # noqa: E402
+from src.metrics import SWEEP_THRESHOLDS  # noqa: E402
 from src.utils import ensure_dir, get_logger  # noqa: E402
 
 log = get_logger("tune_threshold")
@@ -109,9 +110,8 @@ FINE_GRID = tuple(float(t) for t in np.arange(0.01, 1.0, 0.005))
 
 
 def sweep(probs: np.ndarray, y: np.ndarray) -> list[dict]:
-    """扫一组常用阈值，返回指标列表（给人看的粗表）。"""
-    return [metrics_at(probs, y, t) for t in
-            (0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10)]
+    """扫一组常用阈值（``src.metrics.SWEEP_THRESHOLDS``），返回指标列表。"""
+    return [metrics_at(probs, y, t) for t in SWEEP_THRESHOLDS]
 
 
 def best_for_recall(probs: np.ndarray, y: np.ndarray, target: float) -> dict | None:

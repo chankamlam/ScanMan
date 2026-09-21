@@ -120,7 +120,10 @@ export interface ScanReport {
   tool: string
   /** 本地时区 ISO 8601 */
   generated_at: string
-  /** 扫描根目录的**绝对路径**。可能是别的机器的路径，只展示不解析 */
+  /**
+   * 扫描根目录。命令行生成的报告里是**绝对路径**（可能是别的机器的路径，只展示不解析）；
+   * 网页版由 `scripts/serve.py` 覆写成「本次上传的 N 个文件」—— 临时目录路径对看报告的人没意义。
+   */
   root: string
   /** 检测模型路径；没跑推理时为 `null` */
   checkpoint: string | null

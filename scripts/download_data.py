@@ -34,10 +34,12 @@ log = get_logger("download")
 # 结构：数据集名 -> {repo: HF仓库, files: 仓库内文件列表, subdir: 本地子目录,
 #                    desc: 说明, size: 大致体积}
 #
-# 为什么只留 CVEfixes？
+# 为什么下载清单只有 CVEfixes？
 #   它直接来自 NVD 的 CVE 修复提交，带 CWE 标注，检测（二分类）和
-#   分类（CWE 多分类）两个任务都能做。其他数据集（BigVul / DiverseVul /
-#   CodeXGLUE）已从本项目移除。
+#   分类（CWE 多分类）两个任务都能做，且能一键断点续传。
+#   BigVul / DiverseVul / CodeXGLUE 的**构建器**仍在 scripts/build_dataset.py
+#   里（含四源合并 merged），但这三个源的原始文件需自行按构建器要求的
+#   字段与布局放进 data/raw/，本脚本不负责下载。
 DATASETS: dict[str, dict] = {
     "cvefixes": {
         "repo": "hitoshura25/cvefixes",
@@ -93,7 +95,7 @@ def download_file(repo: str, filename: str, dest: Path, endpoint: str) -> bool:
     # 看看之前下到哪了
     pos = tmp.stat().st_size if tmp.exists() else 0
 
-    headers = {"User-Agent": "vuln-bert-downloader/1.0"}
+    headers = {"User-Agent": "scanman-downloader/1.0"}
     if pos:
         headers["Range"] = f"bytes={pos}-"
         log.info("断点续传 %s（已下载 %s）", dest.name, human_int(pos))
@@ -135,7 +137,7 @@ def download_file(repo: str, filename: str, dest: Path, endpoint: str) -> bool:
         return False
 
 
-def main() -> None:
+def main() -> int:
     """命令行入口。"""
     parser = argparse.ArgumentParser(description="下载代码漏洞数据集")
     parser.add_argument("--datasets", default="all",
@@ -154,7 +156,7 @@ def main() -> None:
             print(f"    来源: https://huggingface.co/datasets/{v['repo']}")
             print(f"    说明: {v['desc']}")
         print("\n" + "=" * 76 + "\n")
-        return
+        return 0
 
     # ---- 确定下载源 ----
     # 优先级：命令行参数 > 环境变量 HF_ENDPOINT > 默认官方源
@@ -191,9 +193,11 @@ def main() -> None:
     log.info("=" * 76)
     if failed:
         log.error("以下文件下载失败，请重试或换镜像源：\n  " + "\n  ".join(failed))
+        return 1
     else:
         log.info("全部数据集下载完成 ✅  原始数据位于 %s", raw_dir)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

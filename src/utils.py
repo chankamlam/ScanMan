@@ -20,20 +20,21 @@ from __future__ import annotations
 
 import json
 import logging
+import numbers
 import os
 import random
 import sys
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 
 # ---------------------------------------------------------------------------
 # 项目根目录
 # ---------------------------------------------------------------------------
-# __file__            -> .../vuln_bert/src/utils.py
-# .resolve().parent   -> .../vuln_bert/src
-# .parent             -> .../vuln_bert      ← 项目根目录
+# __file__            -> .../ScanMan/src/utils.py
+# .resolve().parent   -> .../ScanMan/src
+# .parent             -> .../ScanMan        ← 项目根目录
 # 这样无论从哪个目录启动脚本，都能用 PROJECT_ROOT 拼出正确的绝对路径
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -94,7 +95,7 @@ def set_seed(seed: int = 42) -> None:
         pass
 
 
-def get_logger(name: str = "vuln_bert", level: int = logging.INFO) -> logging.Logger:
+def get_logger(name: str = "scanman", level: int = logging.INFO) -> logging.Logger:
     """构造一个输出到标准输出的 logger。
 
     参数
@@ -251,3 +252,47 @@ def human_int(n: int) -> str:
     '15,147'
     """
     return f"{n:,}"
+
+
+def to_int_label(value: Any) -> int | None:
+    """把 gold 标签转成 ``int``；转不了就返回 ``None``。
+
+    为什么需要它
+    ------------
+    同一个 ``label`` 字段在不同文件里有**两种形态**：
+
+    - 正式测试集（``data/processed/*_test.jsonl``）里是类别下标（int）
+    - 人工用例（``docs/test_cases/classification_test_cases.jsonl``）里是
+      CWE 名字（``"CWE-120"``）
+
+    早期各脚本一律写 ``int(rec["label"])``，遇到 CWE 名字直接
+    ``ValueError`` 崩掉整个批量流程。统一走这个函数，让调用方决定
+    "比不了就跳过"，而不是让脚本挂掉。
+
+    参数
+    ----
+    value : Any
+        原始标签值。
+
+    返回
+    ----
+    int | None
+        能安全转成整数时返回该整数（bool 视为非法，避免 ``True -> 1`` 这种
+        静默误读）；否则返回 ``None``。
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    # numpy 的整数类型不是内置 int，但都属于 numbers.Integral
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    if isinstance(value, float):
+        return int(value) if float(value).is_integer() else None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None

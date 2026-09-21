@@ -1,461 +1,252 @@
+# ScanMan · 扫描超人
+
+基于 CodeBERT 的**代码漏洞检测与 CWE 分类**项目：把一个源文件或整个项目目录丢进去，
+逐函数判断"这里有没有漏洞"，并对命中的函数给出 CWE 类型，最后汇总成 JSON 报告，
+可以在网页上查看。
+
+```text
+源文件 / 项目目录
+    → 函数抽取（tree-sitter，拿到源码、函数名、行号）
+    → 漏洞检测（safe / vulnerable + 漏洞概率）
+    → 对命中函数做 CWE 分类（可选，第二级模型）
+    → JSON 报告 → 网页展示
 ```
- ____                  __  __             
-/ ___|  ___ __ _ _ __ |  \/  | __ _ _ __  
-\___ \ / __/ _` | '_ \| |\/| |/ _` | '_ \ 
- ___) | (_| (_| | | | | |  | | (_| | | | |
-|____/ \___\__,_|_| |_|_|  |_|\__,_|_| |_|
 
-                                  扫描超人
-                                          
+两级模型是**级联**的：分类器只处理检测命中的函数。分类数据里没有"安全"这一类，
+喂安全函数等于逼模型在 27 个 CWE 里硬猜，产出的是看起来很像真的噪声。
+
+---
+
+## 当前能力
+
+| 功能 | 当前实现 |
+| --- | --- |
+| 漏洞检测 | 二分类。支持单段代码、文件内容、JSONL 批量推理；判定阈值可调 |
+| CWE 分类 | 已实现训练、推理及项目扫描中的两级级联；演示分类模型为 27 个 CWE + `OTHER`，共 28 类 |
+| 项目扫描 | 支持目录或单个文件，统计各文件的函数数、可疑函数数，保留函数位置和可选源码 |
+| 数据处理 | 构建器支持 CVEfixes、BigVul、DiverseVul、CodeXGLUE 及四源合并 `merged`；下载脚本目前只提供 CVEfixes |
+| Web 扫描与展示 | React + TypeScript + Vite + Ant Design。可查看静态 JSON 报告，也可上传源文件调用本地 Flask 后端真跑模型 |
+| 训练与评估 | 类别加权、平衡采样、混合精度、梯度累积、早停、检测阈值调优、分类 Top-k 指标 |
+
+---
+
+## 它是怎么工作的
+
+| 环节 | 代码入口 | 职责 |
+| --- | --- | --- |
+| 函数抽取 | `src/extract.py` | 用 tree-sitter 按语法切函数，恢复行号与字节偏移。**以字节为真相源**，所以能正确处理 GBK 等非 UTF-8 文件 |
+| 模型 | `src/models.py`、`src/data.py` | 预训练编码器 + 分类头；样本预处理与动态 padding |
+| 推理 | `scripts/predict.py` | `VulnPredictor`：加载检查点、跑单条/批量推理 |
+| 扫描汇总 | `scripts/scan_project.py` | 抽取 → 检测 → 分类 → 组装报告。**命令行和网页版共用这四个函数**，保证结果逐条一致 |
+| Web 后端 | `scripts/serve.py` | 把 HTTP 请求翻译成对上面那条管线的调用，不含任何扫描逻辑 |
+| 前端 | `web/` | 文件上传、调用后端、报告可视化（概率分布 / 文件排行 / CWE 分布 / 热力图） |
+| 数据与训练 | `scripts/build_dataset.py`、`scripts/train.py` 等 | 见 `docs/09_命令参考.md` |
+
+每一步的数据形态变化、以及它由哪个函数完成，见
+[`docs/10_全链路贯通手册.md`](docs/10_全链路贯通手册.md)。
+
+---
+
+## 目录结构
+
+```text
+ScanMan/
+├── configs/config.yaml         # 默认配置
+├── src/                        # 配置、数据、模型、指标、函数抽取、通用工具
+├── scripts/                    # 下载、构建、训练、推理、评估、扫描及 Web 后端
+├── tests/                      # 抽取、级联、预测指标及 Web 接口测试
+├── web/                        # 文件上传、扫描和报告展示前端
+│   ├── src/                    # 页面、组件、数据接口和报告类型
+│   └── public/                 # 三种扫描模式的示例报告
+├── demo_verified/              # 唯一的测试夹具：test_NN.c + TRUTH.json（演示与回归）
+├── docs/                       # 设计、流程、历史实验与排查记录
+├── data/                       # 数据说明；raw/、processed/ 内容不纳入 Git
+├── models/                     # 下载后生成的基础模型目录，不纳入 Git
+├── outputs/                    # 实验记录、示例报告和本地模型产物
+├── requirements.txt
+└── LICENSE
 ```
 
-# 代码漏洞检测与漏洞分类 —— BERT 微调全流程
+---
 
-用 CVE 数据集微调 BERT 系代码预训练模型，实现两个任务：
+## 快速开始
 
-| 任务 | 类型 | 输入 | 输出 |
-|------|------|------|------|
-| __漏洞检测__ | 二分类 | 一段源码 | `safe` / `vulnerable` + 置信度 |
-| __漏洞分类__ | 多分类 | 一段漏洞源码 | CWE 类型（CWE-79 / CWE-89 / CWE-125 …）+ Top-5 |
+详细命令、全部参数、数据构建与训练流程都在 **[`docs/09_命令参考.md`](docs/09_命令参考.md)**。
+这里只给两条最短路径。
 
+### 路径一：只看现成的报告（不需要 Python、GPU 或模型权重）
 
-### 📚 详细文档在 `docs/`
+```bash
+cd web
+npm install
+npm run dev
+```
+
+打开终端显示的地址（默认 <http://localhost:5173>），点「示例报告」即可。也可以直接用地址打开：
+
+| 地址 | 内容 |
+| --- | --- |
+| `?r=sample_report.json` | 检测 + CWE 分类 |
+| `?r=sample_report_detection_only.json` | 仅检测（没有 CWE） |
+| `?r=sample_report_extract_only.json` | 仅抽取函数（**没有任何判定**） |
+
+### 路径二：在网页上传文件、真跑模型
+
+```powershell
+# 1. 环境（Python 3.12）
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m pip install flask        # Web 后端需要，但不在 requirements.txt 里
+
+# 2. 基础模型（models/ 不提交，新克隆的仓库没有）
+python scripts/download_model.py --models codebert
+
+# 3. 起后端（模型在后台加载，前十几秒 /api/health 返回 loading）
+python scripts/serve.py
+```
+
+另开一个终端在 `web/` 下 `npm run dev`，然后点左栏「添加文件」→ 选受支持的源文件 →
+等页眉显示模型就绪 → 点「开始检测」。
+
+上传限制：一次最多 32 个文件、单文件不超过 2,000,000 字节，文件名只允许字母、数字、点、
+下划线和连字符。服务只绑 `127.0.0.1`，不对外网开放。
+
+> 只想确认"链路是通的"、不看效果？`python -m pytest tests/` 用桩推理器跑完整条链路，
+> **不需要模型权重**，几秒钟出结果。
+
+---
+
+## 模型与已有实验
+
+现有演示报告使用以下两个检查点：
+
+| 用途 | 检查点 |
+| --- | --- |
+| 检测模型 | `outputs/merged_detection_codebert/best` |
+| CWE 分类模型 | `outputs/merged_top27_codebert_e20/best` |
+
+| 实验 | 测试集指标 | 记录位置 |
+| --- | --- | --- |
+| 合并数据检测 `merged_detection_codebert` | 阈值 0.5：Precision 0.3774、Recall 0.6779、F1 0.4848、ROC-AUC 0.8717 | [results.json](outputs/merged_detection_codebert/results.json) |
+| 28 类分类 `merged_top27_codebert_e20` | Accuracy 0.3333、Macro-F1 0.2392、Top-3 0.6041、Top-5 0.7438；最优轮次 14 | [results.json](outputs/merged_top27_codebert_e20/results.json) |
+
+演示检测模型的 [threshold.json](outputs/merged_detection_codebert/best/threshold.json) 记录的是
+**0.67**，按验证集 F1 选择，该文件记录的是**验证集**指标。上表检测结果是 0.5 口径，
+不能直接当作 0.67 下的测试成绩；分类指标来自分类测试集，也不等于整个两级扫描流程的准确率。
+
+> ⚠️ 阈值的两种选法差别很大，`tune_threshold.py` 的**默认是 `--criterion recall`（目标 0.90）**，
+> 会选出比 0.67 低得多的阈值。改完阈值务必重跑 `scripts/check_fixture.py`。
+> 对比数据见 [`docs/09`](docs/09_命令参考.md) 第 5 节。
+
+仓库还保留 CVEfixes 检测、BigVul 分类和不同训练轮数的对照记录，可在 `outputs/` 查看；
+每个目录里有什么见 [`docs/05_训练产物说明.md`](docs/05_训练产物说明.md)。
+Git **不包含**模型权重、完整分词器、原始数据及处理后的训练集。
+
+### `demo_verified/` 是唯一的测试夹具
+
+13 个 C 文件、30 个函数，`TRUTH.json` 记录每个函数的标签和 CWE。
+它存在的意义是**演示与回归** —— 每个函数都保证在演示检查点下判得对（30/30 判定、23/23 CWE），
+所以界面上看到的结果是预期内的，可以随时用 `python scripts/check_fixture.py` 复查。
+
+> ⚠️ **它不能用来衡量模型效果。** 夹具是按"模型判对"筛出来的，带选择偏差；
+> 而且里面一部分是**截断过的真实片段**，不是完整函数。
+> 演示用的检测器在完整测试集上是 **F1 0.4848 / accuracy 0.8648 / ROC-AUC 0.8717**。
+> 注意别和 `cvefixes_detection_codebert-base`（F1 0.7521）搞混 —— 那是另一个模型，
+> 用的是单一 CVEfixes 数据源。要看当前检查点的真实水平请用 `scripts/evaluate.py`。
+
+---
+
+## 能力边界
+
+### 支持抽取的扩展名
+
+| 语言 | 扩展名 |
+| --- | --- |
+| C | `.c`、`.h`（`.h` 按 C 解析） |
+| C++ | `.cc`、`.cpp`、`.cxx`、`.hpp`、`.hh`、`.hxx` |
+| Python | `.py`、`.pyw`、`.pyi` |
+| JavaScript / JSX | `.js`、`.mjs`、`.cjs`、`.jsx` |
+| TypeScript / TSX | `.ts`、`.tsx` |
+| PHP | `.php`、`.php3`、`.php5`、`.phtml` |
+
+抽取器覆盖上述语法**不代表模型对各语言具有相同准确率**。当前不抽取 JavaScript 箭头函数、
+Python lambda 等部分表达式形式；与语法错误区域重叠的函数会被丢弃并计数。
+
+### 不做什么
+
+模型按**代码片段**预测，不提供跨函数数据流分析、漏洞行精确定位或自动修复 ——
+报告里的行号是**函数**的位置。扫描发现可疑函数不会让进程返回非零退出码；
+单文件处理失败会记入报告继续扫描。要用在 CI 里，需要自己依据报告设置失败条件。
+
+### 一个必须知道的实测结论
+
+**这个检测器对短小的、手写的教科书式 C 代码基本不响应。**
+
+实测四批自造探针（教科书式短函数 → 真实体量 → 内核/OpenSSL 风格 → 残缺风格）共 31 个函数，
+概率**最高只到 54%，多数落在 10~36%**，远低于 0.67 的判定阈值；而它对自己训练分布内的
+真实代码能给到 78~92%。连"不安全版 vs 安全版"的排序都常常是反的
+（`copy_hostname` 14.4% < `copy_hostname_safe` 18.3%）。
+
+原因是它微调自四源合并（CVEfixes / BigVul / DiverseVul / CodeXGLUE）的**真实 CVE 修复提交**，
+短片段不在其训练分布内。**所以演示素材只能取自真实代码，"自己写几个有漏洞的例子"这条路走不通。**
+详细分析见 [`docs/07_漏洞分类设计方案.md`](docs/07_漏洞分类设计方案.md) 第 6 节。
+
+### 报告格式
+
+JSON 报告的 `schema_version` 为 `1`，顶层字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `root`、`generated_at` | 扫描来源、报告生成时间 |
+| `checkpoint`、`threshold` | 检测检查点与实际阈值；未检测时为 `null` |
+| `classifier_checkpoint` | 分类检查点；未启用分类时为 `null` |
+| `summary` | 文件数、函数数、可疑函数数、已分类函数数、各语言的函数数 |
+| `files[]` | 文件相对路径、解析状态、函数数、可疑数及函数列表 |
+| `skipped[]` | 因读取失败、二进制内容、超出大小限制等原因跳过的文件 |
+
+函数字段**按扫描阶段出现**，未运行的阶段是**省略**而不是填 `null`：
+
+- 抽取后：`name`、`start_line`、`end_line`、字节位置、语言、嵌套深度（行号从 1 开始）
+- `code` 默认包含，传 `--no-code` 时省略
+- `verdict`、`confidence`、`prob_vulnerable`：仅在检测后出现
+- `cwe`、`cwe_topk`：仅在函数被判为 vulnerable 且运行了分类器时出现
+
+`confidence` 是当前判定类别的概率；**比较函数的漏洞风险应该用 `prob_vulnerable`**。
+统计的是模型判为可疑的**函数数量**，同一个函数即使可能包含多处问题也只计一个。
+
+完整契约（每一步的类型定义 + 字段出现条件表）见
+[`docs/08_全流程与接口规范.md`](docs/08_全流程与接口规范.md)。
+
+---
+
+## 测试与文档
+
+```bash
+python -m pytest tests/ -v                  # 抽取 / 级联 / 预测指标 / Web 接口（桩推理器，不需要权重）
+python docs/test_cases/test_preprocess.py   # 数据预处理断言
+python scripts/check_fixture.py             # 复验 demo_verified/ 夹具是否仍全部判对
+```
 
 | 文档 | 内容 |
-| ------ | ------ |
-| [`docs/01_数据集与模型全解析.md`](docs/01_数据集与模型全解析.md) | 原始数据字段 → 清洗规则 → 模型输入 → 训练方式 → 推理输出，六问全解析 |
-| [`docs/02_模型运行完整流程与测试用例.md`](docs/02_模型运行完整流程与测试用例.md) | 9 步完整操作流程 + 测试用例 + 排错手册 + 验收清单 |
-| [`docs/03_项目交接与迁移指南.md`](docs/03_项目交接与迁移指南.md) | __要把项目同步给别人跑、或自己换电脑时看这份__：同步清单、验收步骤、必改的路径 |
-| [`docs/07_漏洞分类设计方案.md`](docs/07_漏洞分类设计方案.md) | __想数"每个文件里有几个函数有漏洞"、或要做 CWE 分类时看这份__（⚠️ 分类**仅设计未实现**） |
-| [`docs/check_all.bat`](docs/check_all.bat) | 一键跑完环境自检 → 单元测试 → 冒烟训练 → 批量推理（约 40 秒） |
+| --- | --- |
+| [文档索引](docs/README.md) | 详细文档导航 |
+| [命令参考](docs/09_命令参考.md) | **全部脚本的命令与参数** |
+| [全链路贯通手册](docs/10_全链路贯通手册.md) | **从原始数据到网页点击的完整数据流**：每一步用了哪个文件的哪个函数、做了什么变换 |
+| [数据集与模型全解析](docs/01_数据集与模型全解析.md) | 数据字段、预处理、模型设计与历史实验 |
+| [模型运行完整流程与测试用例](docs/02_模型运行完整流程与测试用例.md) | 操作流程、测试用例与排错 |
+| [项目交接与迁移指南](docs/03_项目交接与迁移指南.md) | 迁移文件与环境说明 |
+| [数据集卡片](docs/04_数据集卡片.md) | 数据集来源、许可与引用 |
+| [训练产物说明](docs/05_训练产物说明.md) | 检查点和输出文件说明 |
+| [问题排查与改动记录](docs/06_问题排查与改动记录.md) | 历史问题与修改依据 |
+| [漏洞分类设计方案](docs/07_漏洞分类设计方案.md) | 级联与 CWE 分类的设计背景 |
+| [全流程与接口规范](docs/08_全流程与接口规范.md) | 数据流、报告字段和能力边界 |
 
-### 当前完成状态
-
-| 项目 | 状态 | 位置 / 说明 |
-| ------ | ------ | ------------- |
-| CVEfixes 原始文件 | ✅ 已下载 1.1 GB | `data/raw/cvefixes/` |
-| 统一格式训练数据 | ✅ 已生成 56 MB | `data/processed/cvefixes_*.jsonl`（检测 1.89 万 / 分类 7,291，见下节表格） |
-| CodeBERT 预训练权重 | ✅ 已下载 477 MB | `models/microsoft__codebert-base/` |
-| 完整代码流水线 | ✅ 已编写并验证 | `src/` + `scripts/` |
-| __项目级函数扫描__ | ✅ 已实现并验证 | `src/extract.py` + `scripts/scan_project.py`，46 项测试全绿 |
-| 漏洞分类（CWE） | ⚠️ **仅设计，未实现** | 方案见 `docs/07`；**没有任何可用的分类权重** |
-| 训练 → 评估 → 推理 | ✅ 已端到端跑通 | 冒烟测试产物见 `outputs/demo_detection/` |
-| 依赖环境 | ✅ 已装好隔离 venv | `C:\Users\awu70\.workbuddy\binaries\python\envs\vuln_bert` |
-
-> ✅ __正式训练已完成__（2026-09-16，conda `py312` + RTX 3060 Laptop 6 GB，全量 15,147 条 × 3 轮，约 27 分钟）：
-> 测试集 __F1 = 0.7521__，accuracy 0.7618，ROC-AUC 0.8396。参数在 `outputs/cvefixes_detection_codebert-base/best/`。
-> 详细指标与阈值分析见 [`docs/01_数据集与模型全解析.md`](docs/01_数据集与模型全解析.md) 第 5.9 节。
->
-> ⚠️ 注意：本项目有__两套 Python 环境__——conda `py312`（有 CUDA，训练用）和隔离 venv
-> `C:\Users\awu70\.workbuddy\binaries\python\envs\vuln_bert`（CPU 版，只跑流程）。
-> 环境对照见 [`docs/02_模型运行完整流程与测试用例.md`](docs/02_模型运行完整流程与测试用例.md) 第 1.1 节。
-
-### 📘 看不懂这份代码？看教学版
-
-本项目的代码是"工程写法"（`src/` + `scripts/` 分层、抽象较多），
-如果觉得抽象、不好理解，__另有一份功能完全相同、但逐行中文注释的教学版__：
-
-```
-D:\workbuddy_workspace\vuln_bert_教学版\
-```
-
-教学版采用编号目录 + 编号脚本的组织方式，每个文件都能单独运行看效果：
-
-| | 本工程版 | 教学版 |
-| --- | --- | --- |
-| 目录 | `src/` + `scripts/` | `_01_data/` `_02_bert检测/` `_03_bert分类/` |
-| 文件 | `train.py` / `predict.py` | `_05_bert模型训练代码_gpu.py` / `_06_bert_predict_fun.py` |
-| 配置 | `configs/config.yaml` | 每个模块一个 `_01_config.py` 类 |
-| 注释 | 函数级 + 关键逻辑 | __逐行中文注释__ |
-| 数据 | 自己构建 | 复用工程版已构建好的数据 |
-| 适合 | 真正做实验、跑对比 | __学习、跟练、理解每一步__ |
-
-两边用的是同一份数据和同一个模型，结果完全一致。
+部分详细文档和配置注释保留了旧版状态、本机路径及历史实验口径。
+**当前支持范围与命令以本 README 和 [`docs/09`](docs/09_命令参考.md) 为准**，
+具体实验的类别数、阈值与指标以对应 run 的产物为准。
 
 ---
 
-## 一、目录结构
-
-```
-vuln_bert/
-├── README.md                      ← 本文件（完整操作手册）
-├── requirements.txt               ← 依赖清单
-├── configs/
-│   └── config.yaml                ← 训练配置（模型/任务/数据/超参）
-├── src/                           ← 可复用模块
-│   ├── config.py                  ← 配置加载
-│   ├── utils.py                   ← 种子、日志、头尾截断
-│   ├── models.py                  ← VulnClassifier（BERT + 分类头）
-│   ├── metrics.py                 ← 二分类/多分类指标
-│   ├── data.py                    ← Torch Dataset + 动态 padding
-│   │                                （⚠️ 不叫 datasets.py：会顶替第三方包，见 docs/06）
-│   └── extract.py                 ← 函数抽取（tree-sitter，4 语言族）
-├── scripts/                       ← 可执行脚本
-│   ├── check_env.py               ← ① 环境自检
-│   ├── download_data.py           ← ② 下载数据集
-│   ├── download_model.py          ← ③ 下载预训练模型
-│   ├── build_dataset.py           ← ④ 构建统一训练数据
-│   ├── train.py                   ← ⑤ 微调训练
-│   ├── predict.py                 ← ⑥ 推理
-│   ├── evaluate.py                ← ⑦ 全套指标 + 阈值扫描
-│   ├── tune_threshold.py          ← ⑧ 按目标召回率调阈值
-│   ├── scan_project.py            ← ⑨ 扫整个项目：数出每个文件几个函数有漏洞
-│   └── spike_align.py             ← ⑩ 分布对齐 spike（碎片 vs 完整函数）
-├── tests/                         ← 单元测试（python -m pytest tests/ -v）
-│   ├── conftest.py
-│   └── test_extract.py            ← 46 项，含 tree-sitter .row 段错误的回归守卫
-├── docs/                          ← 全部文档（索引见 docs/README.md）
-├── data/
-│   ├── raw/                       ← 原始数据（CVEfixes，已下载 1.1 GB）
-│   └── processed/                 ← 构建好的 JSONL（已生成 56 MB）
-├── models/                        ← 预训练权重（CodeBERT 已下载 477 MB）
-└── outputs/
-    ├── scan_result.json           ← 扫描报告（纯抽取，未接推理）
-    ├── scan_src_inference.json    ← 扫描报告（接了推理，含误报实测）
-    ├── spike_align.json           ← 分布对齐实测数据
-    └── demo_detection/            ← 冒烟测试产物（仅验证流程可跑通，非可用模型）
-```
-
----
-
-## 二、数据集（CVEfixes，已下载完成，共 1.1 GB）
-
-### 2.1 使用的数据集
-
-| 数据源 | 论文/来源 | 原始规模 | 检测样本 | 分类类别 | 磁盘 |
-|--------|-----------|----------|----------|----------|------|
-| __CVEfixes__ | MSR 2021（CVE 官方修复提交） | 13,000 条 CVE | __18,925__ | __40 个 CWE__（41 类） | 1.1 GB |
-
-> 分类任务的类别数 = 保留的 CWE 数 + 1（长尾类别合并出的 `OTHER` 类）。
-
-> __本项目只使用 CVEfixes 一个数据源__，BigVul / DiverseVul / CodeXGLUE 及其合并版已从代码和数据中移除。
-
-__为什么选 CVEfixes__：规模适中（1.9 万条，单卡 1~2 小时可训完）、正负样本均衡（安全 55% / 漏洞 45%）、40 个 CWE 类别覆盖 XSS、SQL 注入、缓冲区溢出、路径遍历等主流漏洞，且检测与分类两个任务共用同一套划分。
-
-### 2.2 下载渠道
-
-| 数据集 | 官方渠道 | 本仓库脚本 |
-| -------- | ---------- | ----------- |
-| CVEfixes（原始 SQL 全量 12 GB） | <https://zenodo.org/records/13118970> · <https://github.com/secureIT-project/CVEfixes> | — |
-| CVEfixes（函数级衍生版，本仓库采用） | <https://huggingface.co/datasets/hitoshura25/cvefixes> | `--datasets cvefixes` |
-
-```bash
-# 查看可用数据集
-python scripts/download_data.py --list
-
-# 下载（国内网络慢时换镜像）
-python scripts/download_data.py --datasets cvefixes
-python scripts/download_data.py --datasets all --mirror hf-mirror
-```
-
-### 2.3 统一后的数据格式
-
-`data/processed/<source>_<task>_{train,val,test}.jsonl`，每行一条：
-
-```json
-{
-  "id": "CVE-2023-4432-vuln",
-  "code": "<input id=\"apiKey\" ... value=\"<?=($apiKey ? $apiKey : '')?>\">",
-  "label": 1,
-  "cwe": "CWE-79",
-  "cwe_name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
-  "source": "cvefixes",
-  "language": "PHP",
-  "project": "invoiceplane",
-  "group_id": "cvefixes::CVE-2023-4432::<commit>"
-}
-```
-
-- __检测任务__：`label` = 0（安全）/ 1（漏洞）
-- __分类任务__：`label` = CWE 类别 id（0~38），39 = `OTHER`（长尾合并）
-- __`group_id` 用于防泄漏__：同一漏洞的「漏洞版本」和「修复版本」被强制分到同一个 split，避免模型靠"见过近似代码"刷分。
-
-标签映射见 `data/processed/<source>_<task>_label_map.json`，统计见 `<source>_stats.json`。
-
----
-
-## 三、预训练模型下载渠道
-
-代码漏洞检测领域的事实标准是 __CodeBERT__ 系列。全部可通过脚本离线下载到 `models/`：
-
-| 模型 | HuggingFace | ModelScope（国内） | 参数量 | 说明 |
-| ------ | ------------- | ------------------- | -------- | ------ |
-| __microsoft/codebert-base__ ⭐ | <https://huggingface.co/microsoft/codebert-base> | <https://www.modelscope.cn/models/microsoft/codebert-base> | 125M | __推荐首选__。CodeSearchNet 6 语言预训练 |
-| microsoft/graphcodebert-base | <https://huggingface.co/microsoft/graphcodebert-base> | 同上搜索 | 125M | 加入数据流图（DFG）预训练，漏洞任务通常更强 |
-| microsoft/unixcoder-base | <https://huggingface.co/microsoft/unixcoder-base> | 同上搜索 | 125M | 代码 + AST + 注释三模态 |
-| bert-base-uncased | <https://huggingface.co/google-bert/bert-base-uncased> | <https://www.modelscope.cn/models/tiansz/bert-base-uncased> | 110M | 通用英文 BERT，作对照基线 |
-| Salesforce/codet5-base | <https://huggingface.co/Salesforce/codet5-base> | — | 220M | Encoder-Decoder，可做漏洞修复生成 |
-
-```bash
-python scripts/download_model.py --list                  # 查看可选模型
-python scripts/download_model.py --models codebert       # 下载（已执行）
-python scripts/download_model.py --models codebert,graphcodebert --mirror hf-mirror
-```
-
-__国内加速__：若 huggingface.co 访问慢，任选其一
-
-```bash
-# 方式 A：脚本参数
-python scripts/download_model.py --models codebert --mirror hf-mirror
-# 方式 B：环境变量（对所有 transformers / datasets 调用生效）
-set HF_ENDPOINT=https://hf-mirror.com      # Windows CMD
-export HF_ENDPOINT=https://hf-mirror.com   # Linux / macOS / Git Bash
-# 方式 C：ModelScope 下载后，把本地目录路径直接传给 --model
-```
-
----
-
-## 四、环境准备
-
-```bash
-cd D:\workbuddy_workspace\vuln_bert
-
-# 1) 创建虚拟环境（推荐 Python 3.9~3.12）
-python -m venv .venv
-.venv\Scripts\activate                  # Windows
-# source .venv/bin/activate             # Linux/macOS
-
-# 2) 安装依赖
-pip install -r requirements.txt
-
-# 3) 【有 GPU 必做】装 CUDA 版 PyTorch（先查驱动支持的 CUDA 版本：nvidia-smi）
-pip install torch --index-url https://download.pytorch.org/whl/cu121
-
-# 4) 自检
-python scripts/check_env.py
-```
-
-`check_env.py` 会报告 Python 版本、依赖、GPU 型号与显存、原始数据、处理后数据、本地模型是否就绪。
-
-> __显存对照__：`max_length=512, batch_size` 建议 —— 8 GB→8，16 GB→16，24 GB→32，40 GB+→64。
-> 显存不足时优先降 `batch_size`，再考虑把 `max_length` 降到 256，并配合 `gradient_accumulation_steps` 保持等效 batch。
-
----
-
-## 五、完整操作步骤
-
-### 步骤 1｜环境自检
-
-```bash
-python scripts/check_env.py
-```
-
-### 步骤 2｜下载数据集（已完成，可跳过）
-
-```bash
-python scripts/download_data.py --datasets all
-```
-
-### 步骤 3｜下载预训练模型（CodeBERT 已完成，可跳过）
-
-```bash
-python scripts/download_model.py --models codebert
-```
-
-### 步骤 4｜构建训练数据
-
-```bash
-# CVEfixes（1.9 万条检测 + 7,291 条分类，40 类 CWE）
-python scripts/build_dataset.py --source cvefixes
-
-# 只构建其中一个任务
-python scripts/build_dataset.py --source cvefixes --task detection
-python scripts/build_dataset.py --source cvefixes --task classification
-```
-
-产物写入 `data/processed/`。构建过程含：长度过滤 → 字符级头尾截断（8000 字符）→ MD5 去重 → __按 `group_id` 分组划分__（8:1:1）。
-
-### 步骤 5｜微调训练
-
-__任务 A：漏洞检测（二分类）__
-
-```bash
-python scripts/train.py --task detection --source cvefixes --model microsoft/codebert-base
-```
-
-__任务 B：漏洞分类（CWE 多分类）__
-
-```bash
-python scripts/train.py --task classification --source cvefixes --model microsoft/codebert-base
-```
-
-__快速冒烟测试（CPU 也能跑通，约 1 分钟）__
-
-```bash
-python scripts/train.py --task detection --source cvefixes ^
-    --epochs 1 --batch-size 8 --max-length 128 ^
-    --max-train-samples 200 --max-eval-samples 100
-```
-
-__常用覆盖参数__（命令行优先于 `configs/config.yaml`）
-
-| 参数 | 说明 |
-| ------ | ------ |
-| `--model` | 预训练模型名或本地路径（如 `models/microsoft__codebert-base`） |
-| `--epochs` / `--batch-size` / `--lr` | 训练轮数 / 批大小 / 学习率 |
-| `--max-length` | 最大 token 长度（512 / 256 / 128） |
-| `--max-train-samples` | 限制训练样本数，调试用 |
-| `--imbalance` | `weighted_loss`（默认）/ `balanced_sampler` / `none` |
-| `--run-name` | 输出子目录名 |
-| `--cpu` | 强制 CPU |
-
-训练产物（`outputs/<run_name>/`）：
-
-```
-config.yaml            生效配置（可复现）
-best/pytorch_model.bin 验证集最优权重
-best/tokenizer.json    分词器
-best/label_map.json    标签映射
-results.json           每轮指标 + 测试集指标
-report_test.txt        逐类别 P/R/F1 明细（分类任务）
-probs_test.npy         预测概率（可用于画 PR/ROC 曲线）
-logits_test.npy / labels_test.npy
-```
-
-### 步骤 6｜推理
-
-```bash
-# 单段代码
-python scripts/predict.py --checkpoint outputs/cvefixes_detection_codebert-base/best ^
-  --code "void f(char *s){ char buf[10]; strcpy(buf, s); }"
-
-# 从文件读取
-python scripts/predict.py --checkpoint <ckpt> --file test.c
-
-# 批量（JSONL，字段 code），自动与 gold 标签比对准确率
-python scripts/predict.py --checkpoint <ckpt> ^
-  --input data/processed/cvefixes_detection_test.jsonl --output outputs/preds.jsonl
-```
-
-输出示例（检测）：
-
-```
-判定结果 : vulnerable
-置信度   : 0.9987
-安全概率 : 0.0013
-漏洞概率 : 0.9987
-```
-
-输出示例（分类）：
-
-```
-预测 CWE : CWE-787  (置信度 0.6120)
-Top-5    :
-   CWE-787      0.6120
-   CWE-125      0.1903
-   CWE-119      0.0881
-   ...
-```
-
-### 步骤 7｜对比实验（建议）
-
-```bash
-# 换模型
-python scripts/train.py --model microsoft/graphcodebert-base --run-name gcb_detection
-# 换不平衡策略
-python scripts/train.py --imbalance balanced_sampler --run-name bs_detection
-# 对照基线
-python scripts/train.py --model bert-base-uncased --run-name bert_base_detection
-```
-
-所有 `outputs/*/results.json` 可直接横向比较。
-
-### 步骤 8｜扫描整个项目（数出每个文件有几个函数有漏洞）
-
-模型一次只对**一段代码**输出**一个**结论，所以"文件级/项目级判断"由外部聚合：
-**抽函数 → 逐函数推理 → 按文件统计**。这一步由 `scripts/scan_project.py` 完成。
-
-```bash
-# 只抽取、不推理（不需要模型权重，任何机器都能跑）
-python scripts/scan_project.py src/
-
-# 连推理一起做（需要检测模型权重）
-python scripts/scan_project.py . --checkpoint outputs/cvefixes_detection_6ep/best
-
-# 只要顶层函数、不把源码写进报告
-python scripts/scan_project.py . --checkpoint <ckpt> --outer-only --no-code
-```
-
-输出 `outputs/scan_result.json`，顶层是汇总（扫了多少文件/函数、几个可疑），
-每个文件下面是它的函数清单与逐个判定。
-
-> ⚠️ **别拿它直接当门禁**：现有检查点在真实项目代码上**误报率不低**
-> —— 扫本仓库自己的 `src/`，47 个纯函数里有 15 个被判可疑（31.9%）。
-> 实测数据见 [`docs/07` 6.5](docs/07_漏洞分类设计方案.md)。
-> 支持的语言：C/C++、Python、JS/TS、PHP（其它语言留注册表扩展）。
-
----
-
-## 六、关键设计说明
-
-__1. 头尾截断（head+tail）__
-漏洞代码的关键信息（参数校验、循环边界、`free()`）常出现在函数首尾。`src/utils.py::truncate_code` 按 6:4 保留头尾，比直接截断尾部保留更多有效信息。
-
-__2. 按 group 划分，杜绝数据泄漏__
-同一 CVE 的「漏洞版本」和「修复版本」差异极小。若随机划分，测试集会出现训练集的近邻副本，指标虚高。本项目以 `group_id`（CVE + commit hash）为单位划分。
-
-__3. 分层学习率__
-编码器 `2e-5`、分类头 `1e-4`（`head_learning_rate`）。随机初始化的分类头需要更大步长才能跟上预训练权重。
-
-__4. 类别不平衡处理__
-CVEfixes 检测任务正负样本大致均衡（漏洞约 45%），但分类任务的 40 个 CWE 类别长尾明显（最小类 37 条、最大类 1,349 条），
-因此默认 `weighted_loss`（按类别频率倒数加权交叉熵），也可切 `balanced_sampler`。
-
-__5. 长尾 CWE 合并__
-CWE 分布极度长尾。`min_class_samples=30` + `top_k_classes=40`：样本量不足 30 的类别合并为 `OTHER`，避免模型在 1~2 个样本的类别上过拟合。
-
----
-
-## 七、常见问题
-
-__Q1：`CUDA out of memory`__
-
-```bash
-python scripts/train.py --batch-size 4 --max-length 256
-```
-
-并在 `configs/config.yaml` 里设 `gradient_accumulation_steps: 4` 保持等效 batch = 16。
-
-__Q2：下载超时 / 连接被重置__
-
-```bash
-set HF_ENDPOINT=https://hf-mirror.com
-python scripts/download_data.py --datasets cvefixes
-```
-
-`download_data.py` 支持断点续传，重复执行会自动跳过已完成的文件。
-
-__Q3：Windows 上 DataLoader 报多进程错误__
-`configs/config.yaml` 中 `num_workers: 0`（默认已设）。
-
-__Q4：CPU 训练太慢__
-单条 512-token 样本在 CPU 上约 2~3 条/秒。务必用 `--max-train-samples 200` 先跑通流程，正式训练换 GPU。GPU（RTX 3090）上 CVEfixes 检测任务约 __15 分钟/epoch__。
-
-__Q5：检测任务 F1 只有 0.6 左右，正常吗？__
-正常。代码漏洞检测本身是困难任务（文献中 CodeBERT 在 BigVul/Devign 这类真实分布数据集上 F1 多在 __0.55~0.65__）。
-在 CVEfixes 这类"修复前后对比"数据上，由于漏洞版与修复版常只差几行、相似度较高，指标通常会显著高于上述区间。
-若结果异常低，优先检查：
-
-1. 是否误用 `--max-train-samples` 导致训练不足；
-2. 分类任务是否因长尾类别拉低 macro-F1（看 `report_test.txt` 的加权 F1）。
-
-__Q6：想用 CVEfixes 官方全量（12 GB SQL dump）__
-
-```bash
-curl -L -o CVEfixes_v1.0.8.zip https://zenodo.org/records/13118970/files/CVEfixes_v1.0.8.zip
-# 解压后需 PostgreSQL 导入，再自行导出 vulnerable_code / fixed_code 字段
-```
-
-数据量大且需要数据库环境，除非做全量实验，否则建议用本仓库已下载的函数级衍生版。
-
-__Q7：`transformers` 版本差异导致报错__
-本项目在 `transformers 5.17` + `torch 2.14` 上验证通过。若报 `AutoModel` 相关错误，先 `pip install -U "transformers>=4.45"`。
-
----
-
-## 八、参考文献
-
-1. Bhandari et al. __CVEfixes: Automated Collection of Vulnerabilities and Their Fixes from Open-Source Software.__ MSR 2021.
-2. Feng et al. __CodeBERT: A Pre-Trained Model for Programming and Natural Languages.__ EMNLP 2020.
-3. Guo et al. __GraphCodeBERT: Pre-training Code Representations with Data Flow.__ ICLR 2021.
-4. Zhou et al. __Devign: Effective Vulnerability Identification by Learning Comprehensive Program Semantics via Graph Neural Networks.__ NeurIPS 2019.
+项目代码采用 [MIT License](LICENSE)。外部数据集、预训练模型及真实项目样例的许可
+需分别遵循其来源要求。

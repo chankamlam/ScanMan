@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
   "tool": "scanman",
-  "generated_at": "2026-09-21T20:27:36+08:00",
+  "generated_at": "2026-09-21T22:03:23+08:00",
   "root": "D:\\Dev\\Projects\\ScanMan\\demo_verified",
   "checkpoint": null,
   "threshold": null,
   "classifier_checkpoint": null,
   "summary": {
-    "files_scanned": 7,
+    "files_scanned": 13,
     "files_skipped": 0,
-    "functions_total": 16,
+    "functions_total": 30,
     "functions_suspicious": 0,
     "functions_classified": 0,
     "languages": {
-      "c": 16
+      "c": 30
     }
   },
   "skipped": [],
   "files": [
     {
-      "path": "curl.c",
+      "path": "test_01.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1206,
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "path": "jasper.c",
+      "path": "test_02.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5782,
@@ -85,7 +85,7 @@
       ]
     },
     {
-      "path": "krb5.c",
+      "path": "test_03.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1200,
@@ -107,7 +107,7 @@
       ]
     },
     {
-      "path": "libgit2.c",
+      "path": "test_04.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 4183,
@@ -140,7 +140,7 @@
       ]
     },
     {
-      "path": "linux.c",
+      "path": "test_05.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 5340,
@@ -206,7 +206,7 @@
       ]
     },
     {
-      "path": "mujs.c",
+      "path": "test_06.c",
       "language": "c",
       "parse_ok": true,
       "num_bytes": 1478,
@@ -228,7 +228,7 @@
       ]
     },
     {
-      "path": "openssl.c",
+      "path": "test_07.c",
       "language": "c",
       "parse_ok": false,
       "num_bytes": 3954,
@@ -264,6 +264,226 @@
           "end_line": 140,
           "start_byte": 2364,
           "end_byte": 3952,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_08.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2428,
+      "function_count": 2,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "usbip_recv_xbuff",
+          "start_line": 11,
+          "end_line": 46,
+          "start_byte": 573,
+          "end_byte": 1317,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "common_timer_set",
+          "start_line": 48,
+          "end_line": 84,
+          "start_byte": 1319,
+          "end_byte": 2427,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_09.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 1419,
+      "function_count": 1,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ssl_scan_clienthello_custom_tlsext",
+          "start_line": 11,
+          "end_line": 41,
+          "start_byte": 576,
+          "end_byte": 1418,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_10.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2089,
+      "function_count": 2,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "encrypt",
+          "start_line": 11,
+          "end_line": 45,
+          "start_byte": 582,
+          "end_byte": 1557,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "xfrm_alloc_replay_state_esn",
+          "start_line": 47,
+          "end_line": 72,
+          "start_byte": 1559,
+          "end_byte": 2088,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_11.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2796,
+      "function_count": 2,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "tcp_open",
+          "start_line": 11,
+          "end_line": 56,
+          "start_byte": 576,
+          "end_byte": 1524,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "preproc_mount_mnt_dir",
+          "start_line": 58,
+          "end_line": 88,
+          "start_byte": 1526,
+          "end_byte": 2795,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_12.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 3658,
+      "function_count": 3,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "shmem_remount_fs",
+          "start_line": 11,
+          "end_line": 47,
+          "start_byte": 582,
+          "end_byte": 1699,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "xfrm_dump_policy",
+          "start_line": 49,
+          "end_line": 69,
+          "start_byte": 1701,
+          "end_byte": 2326,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "debugfs_rename",
+          "start_line": 71,
+          "end_line": 112,
+          "start_byte": 2328,
+          "end_byte": 3657,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "test_13.c",
+      "language": "c",
+      "parse_ok": true,
+      "num_bytes": 2213,
+      "function_count": 4,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "av1c_box_size",
+          "start_line": 11,
+          "end_line": 28,
+          "start_byte": 594,
+          "end_byte": 961,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "BTM_GetSecurityFlagsByTransport",
+          "start_line": 30,
+          "end_line": 46,
+          "start_byte": 963,
+          "end_byte": 1437,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "cmd_response_body_mime_types_clear",
+          "start_line": 48,
+          "end_line": 61,
+          "start_byte": 1439,
+          "end_byte": 1856,
+          "node_type": "function_definition",
+          "language": "c",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "ntop_interface_name2id",
+          "start_line": 63,
+          "end_line": 74,
+          "start_byte": 1858,
+          "end_byte": 2212,
           "node_type": "function_definition",
           "language": "c",
           "depth": 0,
