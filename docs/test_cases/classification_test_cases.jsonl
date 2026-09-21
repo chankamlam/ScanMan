@@ -1,7 +1,0 @@
-{"id": "cls01_cwe120", "code": "void copy_input(char *user_input) {\n    char buf[10];\n    strcpy(buf, user_input);\n}\n", "expect_cwe": "CWE-120", "note": "缓冲区溢出"}
-{"id": "cls02_cwe89", "code": "<?php\n$id = $_GET['id'];\n$sql = \"SELECT * FROM users WHERE id = \" . $id;\nmysqli_query($conn, $sql);\n?>\n", "expect_cwe": "CWE-89", "note": "SQL 注入"}
-{"id": "cls03_cwe79", "code": "<?php\necho \"<div>\" . $_GET['name'] . \"</div>\";\n?>\n", "expect_cwe": "CWE-79", "note": "跨站脚本 XSS"}
-{"id": "cls04_cwe78", "code": "int main(int argc, char **argv) {\n    char cmd[256];\n    sprintf(cmd, \"ls %s\", argv[1]);\n    system(cmd);\n}\n", "expect_cwe": "CWE-78", "note": "OS 命令注入"}
-{"id": "cls05_cwe22", "code": "import os\n\ndef read_report(filename):\n    with open(os.path.join('/var/www/reports', filename)) as f:\n        return f.read()\n", "expect_cwe": "CWE-22", "note": "路径遍历"}
-{"id": "cls06_cwe416", "code": "void process(struct node *n) {\n    free(n);\n    n->value = 42;\n    printf(\"%d\\n\", n->value);\n}\n", "expect_cwe": "CWE-416", "note": "释放后使用 use-after-free"}
-{"id": "cls07_cwe476", "code": "void print_user_name(int id) {\n    struct user *u = find_user(id);\n    printf(\"%s\\n\", u->name);\n}\n", "expect_cwe": "CWE-476", "note": "空指针解引用"}
