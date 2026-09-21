@@ -77,6 +77,40 @@ check("截断后长度 = 上限 + 占位注释", len(truncated), 10 + len("\n/* 
 check("空字符串安全", truncate_code("", max_chars=10), "")
 check("占位注释说明从哪里断的", "[中间代码已截断]" in truncated, True)
 
+# ---------------------------------------------------------------- 3.5 token 级头尾截断
+print("\n[3.5] tokenize_head_tail —— 先分词，再保留头 60% + 尾 40%")
+model_dir = ROOT / "models" / "microsoft__codebert-base"
+if model_dir.exists():
+    from transformers import AutoTokenizer
+    from src.data import tokenize_head_tail
+
+    tokenizer = AutoTokenizer.from_pretrained(str(model_dir), local_files_only=True)
+
+    short_code = "int main() { return 0; }"
+    short_out = tokenize_head_tail(tokenizer, short_code, max_length=32, head_ratio=0.6)
+    short_ref = tokenizer(short_code, truncation=False, padding=False)
+    check("短文本与普通 tokenizer 输出一致", short_out["input_ids"], short_ref["input_ids"])
+
+    long_code = "int value = 0;\n" * 50
+    raw_ids = tokenizer(
+        long_code, add_special_tokens=False, truncation=False, padding=False
+    )["input_ids"]
+    out = tokenize_head_tail(tokenizer, long_code, max_length=32, head_ratio=0.6)
+    budget = 32 - tokenizer.num_special_tokens_to_add(pair=False)
+    head_len = int(budget * 0.6)
+    tail_len = budget - head_len
+    expected = (
+        [tokenizer.cls_token_id]
+        + raw_ids[:head_len]
+        + raw_ids[-tail_len:]
+        + [tokenizer.sep_token_id]
+    )
+    check("长文本保留 token 级头尾", out["input_ids"], expected)
+    check("长文本不超过 max_length", len(out["input_ids"]), 32)
+    check("attention_mask 全为 1", out["attention_mask"], [1] * 32)
+else:
+    print(f"  [SKIP] 找不到 {model_dir}，跳过 token 级截断测试")
+
 # ---------------------------------------------------------------- 4. 去重指纹
 print("\n[4] _md5 —— 跨平台一致，可跨进程去重")
 check("换行符统一后指纹相同", _md5(_clean_code("a\r\nb")), _md5("a\nb"))

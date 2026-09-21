@@ -573,7 +573,7 @@ def main() -> None:
     ds_kwargs = dict(
         tokenizer=tokenizer,
         max_length=cfg["model"]["max_length"],
-        max_code_chars=cfg["model"]["max_code_chars"],
+        head_ratio=cfg["model"]["head_ratio"],
     )
     train_ds = VulnDataset(train_records, **ds_kwargs)
     val_ds = VulnDataset(val_records, **ds_kwargs)

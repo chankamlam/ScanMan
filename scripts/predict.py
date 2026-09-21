@@ -41,6 +41,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import resolve_path  # noqa: E402
+from src.data import tokenize_head_tail  # noqa: E402
 from src.metrics import softmax  # noqa: E402
 from src.models import VulnClassifier, build_tokenizer  # noqa: E402
 from src.utils import get_logger, truncate_code  # noqa: E402
@@ -59,8 +60,8 @@ class VulnPredictor:
         设备，``"cpu"`` / ``"cuda"`` / ``"cuda:1"``。为 None 时自动选择。
     max_length : int
         最大 token 长度（会被 config.yaml 里的值覆盖）。
-    max_code_chars : int
-        字符级截断阈值（会被 config.yaml 里的值覆盖）。
+    head_ratio : float
+        token 级头尾截断时，头部保留的 token 比例（会被 config.yaml 里的值覆盖）。
 
     设计思路
     --------
@@ -69,7 +70,7 @@ class VulnPredictor:
     """
 
     def __init__(self, checkpoint: str | Path, device: str | None = None,
-                 max_length: int = 512, max_code_chars: int = 8000,
+                 max_length: int = 512, head_ratio: float | None = None,
                  threshold: float | None = None):
         # ---- 1. 定位检查点目录 ----
         self.ckpt = Path(checkpoint)
@@ -110,18 +111,30 @@ class VulnPredictor:
         # 才能把权重 load 进去。用哪个预训练模型、max_length 是多少，
         # 这些信息只有 config.yaml 里有。
         base_model = "microsoft/codebert-base"
+        max_code_chars = None
         cfg_path = self.ckpt.parent / "config.yaml"
         if cfg_path.exists():
             import yaml
 
             c = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
-            base_model = c.get("model", {}).get("name", base_model)
-            max_length = c.get("model", {}).get("max_length", max_length)
-            max_code_chars = c.get("model", {}).get("max_code_chars", max_code_chars)
+            model_cfg = c.get("model", {})
+            base_model = model_cfg.get("name", base_model)
+            max_length = model_cfg.get("max_length", max_length)
+            if "head_ratio" in model_cfg:
+                # 新 checkpoint：token 级头尾截断。
+                head_ratio = float(model_cfg["head_ratio"])
+            else:
+                # 旧 checkpoint：继续使用字符级截断，保证训练/推理一致。
+                max_code_chars = int(model_cfg.get("max_code_chars", 8000))
+
+        if head_ratio is None and max_code_chars is None:
+            # 没有 config 时按当前默认逻辑处理。
+            head_ratio = 0.6
 
         # ---- 4. 加载分词器（从检查点目录加载，保证与训练一致） ----
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.max_length = max_length
+        self.head_ratio = head_ratio
         self.max_code_chars = max_code_chars
         self.tokenizer = build_tokenizer(str(self.ckpt))
 
@@ -157,15 +170,37 @@ class VulnPredictor:
         但算 F1/AUC 这类指标需要原始概率。``scripts/evaluate.py`` 用这个方法，
         避免为了拿到概率再去写一遍预处理逻辑。
         """
-        # ---- 1. 预处理：头尾截断（必须和训练时用同样的规则） ----
-        codes = [truncate_code(c or "", self.max_code_chars) for c in codes]
-
-        # ---- 2. 分词 ----
-        # 推理时 padding=True 是"补到本 batch 最长"，比补到 512 更快
-        enc = self.tokenizer(
-            codes, truncation=True, max_length=self.max_length,
-            padding=True, return_tensors="pt",
-        )
+        # ---- 1. 预处理：必须和训练时使用完全相同的长度规则 ----
+        if self.head_ratio is not None:
+            # 新 checkpoint：token 级头尾截断。
+            features = [
+                tokenize_head_tail(
+                    self.tokenizer,
+                    code or "",
+                    max_length=self.max_length,
+                    head_ratio=self.head_ratio,
+                )
+                for code in codes
+            ]
+            enc = self.tokenizer.pad(
+                features,
+                padding=True,
+                return_tensors="pt",
+            )
+        else:
+            # 旧 checkpoint：保留旧的字符级截断 + tokenizer 右截断，
+            # 否则历史模型会出现训练/推理 preprocessing mismatch。
+            legacy_codes = [
+                truncate_code(code or "", self.max_code_chars or 8000)
+                for code in codes
+            ]
+            enc = self.tokenizer(
+                legacy_codes,
+                truncation=True,
+                max_length=self.max_length,
+                padding=True,
+                return_tensors="pt",
+            )
         enc = {k: v.to(self.device) for k, v in enc.items()}
 
         # ---- 3. 过滤模型不认识的字段 ----

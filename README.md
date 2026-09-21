@@ -248,7 +248,7 @@ python scripts/build_dataset.py --source cvefixes --task detection
 python scripts/build_dataset.py --source cvefixes --task classification
 ```
 
-产物写入 `data/processed/`。构建过程含：长度过滤 → 字符级头尾截断（8000 字符）→ MD5 去重 → __按 `group_id` 分组划分__（8:1:1）。
+产物写入 `data/processed/`。构建过程含：长度过滤 → 字符级保护性截断（20,000 字符）→ MD5 去重 → __按 `group_id` 分组划分__（8:1:1）。训练和推理阶段不再做 8,000 字符二次截断，而是在 512 token 预算内按 60% / 40% 做 token 级头尾截断。
 
 ### 步骤 5｜微调训练
 
