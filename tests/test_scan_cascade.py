@@ -5,7 +5,7 @@
 
 1. **只对检测命中的函数跑分类**。分类数据里没有"安全"这一类
    （``build_dataset.py`` 只取 ``label==1`` 且有 ``cwe`` 的样本），
-   喂安全函数等于逼模型在 27 个 CWE 里硬猜，产出的是看起来很像真的噪声。
+   喂安全函数等于逼模型在 27 个 CWE + OTHER 里硬猜，产出的是看起来很像真的噪声。
 2. **报告字段只增不改**。新增 ``cwe`` / ``cwe_topk`` / ``functions_classified``
    都是可选字段，``SCHEMA_VERSION`` 保持 1（约定见 docs/07 184 行）。
 3. **检测结论与分类结果解耦**。``suspicious_count`` 必须只由检测 verdict

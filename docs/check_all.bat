@@ -38,7 +38,7 @@ if not exist "data\processed\cvefixes_detection_train.jsonl" (
 )
 if not defined PREREQ_OK (
     echo.
-    echo See docs\README.md  section "Fastest way to verify" for details.
+    echo See docs\README.md, section "Fastest way to verify" (heading is in Chinese), for details.
     pause
     exit /b 2
 )

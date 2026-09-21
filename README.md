@@ -198,6 +198,7 @@ JSON 报告的 `schema_version` 为 `1`，顶层字段：
 
 | 字段 | 含义 |
 | --- | --- |
+| `schema_version`、`tool` | 报告版本（当前 `1`）、生成工具名 |
 | `root`、`generated_at` | 扫描来源、报告生成时间 |
 | `checkpoint`、`threshold` | 检测检查点与实际阈值；未检测时为 `null` |
 | `classifier_checkpoint` | 分类检查点；未启用分类时为 `null` |
@@ -207,7 +208,8 @@ JSON 报告的 `schema_version` 为 `1`，顶层字段：
 
 函数字段**按扫描阶段出现**，未运行的阶段是**省略**而不是填 `null`：
 
-- 抽取后：`name`、`start_line`、`end_line`、字节位置、语言、嵌套深度（行号从 1 开始）
+- 抽取后：`name`、`start_line`、`end_line`、字节位置、`language`、`depth`、`node_type`、
+  `parent_name`（嵌套函数的父函数名或 `null`；行号从 1 开始）
 - `code` 默认包含，传 `--no-code` 时省略
 - `verdict`、`confidence`、`prob_vulnerable`：仅在检测后出现
 - `cwe`、`cwe_topk`：仅在函数被判为 vulnerable 且运行了分类器时出现
