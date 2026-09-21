@@ -10,9 +10,11 @@ PyTorch 的数据管道由三部分组成：
 ----------------
 1. **按需分词**：不在初始化时把全部样本 tokenize 好，而是在 ``__getitem__``
    里逐条处理。这样 50 万条数据也只占几十 MB 内存。
-2. **动态 padding**：不统一补齐到 512，而是补到"本 batch 最长的那条"。
+2. **动态 padding**：不统一补齐到 512，而是补到“本 batch 最长的那条”。
    代码长度差异极大（短则几十 token，长则上千），动态 padding 能省掉
    大量无效计算，实测训练速度可提升 2~3 倍。
+3. **token 级头尾截断**：先分词，再在 ``max_length`` 内保留头部和尾部，
+   避免字符级截断后的尾部又被 tokenizer 的右截断丢掉。
 """
 
 from __future__ import annotations
@@ -22,8 +24,6 @@ from typing import Any, Iterable
 
 import torch
 from torch.utils.data import Dataset
-
-from .utils import truncate_code
 
 
 class VulnDataset(Dataset):
@@ -46,8 +46,8 @@ class VulnDataset(Dataset):
         HuggingFace 分词器对象。
     max_length : int
         最大 token 数，超过会被截断。
-    max_code_chars : int
-        送入分词器前的字符级头尾截断阈值。
+    head_ratio : float
+        token 级头尾截断时，头部保留的 token 比例。默认 0.6。
     """
 
     def __init__(
@@ -55,12 +55,12 @@ class VulnDataset(Dataset):
         records: list[dict[str, Any]],
         tokenizer,
         max_length: int = 512,
-        max_code_chars: int = 8000,
+        head_ratio: float = 0.6,
     ) -> None:
         self.records = records
         self.tokenizer = tokenizer
         self.max_length = max_length
-        self.max_code_chars = max_code_chars
+        self.head_ratio = head_ratio
 
     def __len__(self) -> int:
         """返回样本总数，DataLoader 靠它决定一个 epoch 要取多少次。"""
@@ -88,22 +88,17 @@ class VulnDataset(Dataset):
         """
         rec = self.records[idx]
 
-        # ---- 1. 取代码并做头尾截断（防止超长样本拖慢整体） ----
-        code = truncate_code(rec.get("code") or "", self.max_code_chars)
-
-        # ---- 2. 分词 ----
-        # truncation=True  超长截断
-        # padding=False    不补齐（交给 collate_fn）
-        # return_attention_mask=True  生成 0/1 掩码，告诉模型哪些是真实 token
-        enc = self.tokenizer(
-            code,
-            truncation=True,
+        # ---- 1. 取代码并做 token 级头尾截断 ----
+        # 先分词，再在内容 token 预算内保留头部和尾部。
+        # 这样不会像“字符截断 + tokenizer 只保留前 512 token”那样丢掉尾部。
+        enc = tokenize_head_tail(
+            self.tokenizer,
+            rec.get("code") or "",
             max_length=self.max_length,
-            padding=False,
-            return_attention_mask=True,
+            head_ratio=self.head_ratio,
         )
 
-        # ---- 3. 组装返回值 ----
+        # ---- 2. 组装返回值 ----
         item = {k: v for k, v in enc.items()}
         item["labels"] = int(rec["label"])
 
@@ -116,6 +111,97 @@ class VulnDataset(Dataset):
             "language": rec.get("language", ""),
         }
         return item
+
+
+def tokenize_head_tail(
+    tokenizer,
+    text: str,
+    max_length: int = 512,
+    head_ratio: float = 0.6,
+) -> dict[str, list[int]]:
+    """按 token 做「头 + 尾」截断，并保留模型需要的特殊 token。
+
+    参数
+    ----
+    tokenizer
+        HuggingFace tokenizer。
+    text : str
+        原始代码文本。
+    max_length : int
+        返回序列的最大 token 数，包含 ``[CLS]/<s>`` 和 ``[SEP]</s>``。
+    head_ratio : float
+        内容 token 中头部保留的比例，必须在 0 和 1 之间。
+
+    返回
+    ----
+    dict[str, list[int]]
+        ``input_ids``、``attention_mask``；如果 tokenizer 声明需要
+        ``token_type_ids``，也会一并返回。
+
+    实现说明
+    --------
+    先以 ``add_special_tokens=False`` 对完整文本分词，再根据剩余预算计算
+    头部和尾部 token 数，最后手动加上特殊 token。这样对 BERT/RoBERTa
+    系列的 CodeBERT、GraphCodeBERT、UniXcoder 都适用。
+    """
+    if max_length <= 0:
+        raise ValueError(f"max_length 必须大于 0，实际为 {max_length}")
+    if not 0.0 < head_ratio < 1.0:
+        raise ValueError(f"head_ratio 必须在 (0, 1) 之间，实际为 {head_ratio}")
+    if not isinstance(text, str):
+        text = ""
+
+    # 先分词，但不加 special tokens，拿到纯内容 token。
+    enc = tokenizer(
+        text,
+        add_special_tokens=False,
+        truncation=False,
+        padding=False,
+        return_attention_mask=False,
+        verbose=False,
+    )
+    content_ids = list(enc["input_ids"])
+
+    special_count = int(tokenizer.num_special_tokens_to_add(pair=False))
+    content_budget = max_length - special_count
+    if content_budget <= 0:
+        raise ValueError(
+            f"max_length={max_length} 放不下 {special_count} 个特殊 token"
+        )
+
+    if len(content_ids) > content_budget:
+        head_len = int(content_budget * head_ratio)
+        head_len = max(1, min(content_budget - 1, head_len))
+        tail_len = content_budget - head_len
+        content_ids = content_ids[:head_len] + content_ids[-tail_len:]
+
+    # CodeBERT/GraphCodeBERT/UniXcoder/BERT 都是 [CLS] ... [SEP] 形式。
+    cls_id = getattr(tokenizer, "cls_token_id", None)
+    sep_id = getattr(tokenizer, "sep_token_id", None)
+    if cls_id is not None and sep_id is not None:
+        input_ids = [int(cls_id), *content_ids, int(sep_id)]
+    else:
+        bos_id = getattr(tokenizer, "bos_token_id", None)
+        eos_id = getattr(tokenizer, "eos_token_id", None)
+        input_ids = []
+        if bos_id is not None:
+            input_ids.append(int(bos_id))
+        input_ids.extend(content_ids)
+        if eos_id is not None:
+            input_ids.append(int(eos_id))
+
+    # 防御性截断：正常情况下不会触发，避免自定义 tokenizer 的特殊 token
+    # 计数与实际拼接方式不一致时超过模型位置上限。
+    if len(input_ids) > max_length:
+        input_ids = input_ids[:max_length]
+
+    result: dict[str, list[int]] = {
+        "input_ids": [int(x) for x in input_ids],
+        "attention_mask": [1] * len(input_ids),
+    }
+    if "token_type_ids" in getattr(tokenizer, "model_input_names", []):
+        result["token_type_ids"] = [0] * len(input_ids)
+    return result
 
 
 class DynamicPaddingCollator:

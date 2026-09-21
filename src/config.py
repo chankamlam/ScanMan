@@ -49,9 +49,10 @@ DEFAULTS: dict[str, Any] = {
         # 一条样本最多切成多少个 token。CodeBERT 上限 512。
         # 显存不够时可以降到 256，精度损失通常很小。
         "max_length": 512,
-        # 送入 tokenizer 之前的字符级截断阈值（头 60% + 尾 40%）
-        # 8000 字符 ≈ 2000~3000 个 token，足够覆盖绝大多数函数
-        "max_code_chars": 8000,
+        # token 级头尾截断时，头部保留的内容 token 比例。
+        # 例如 max_length=512、head_ratio=0.6 时，510 个内容 token
+        # 会保留为前 306 个和后 204 个。
+        "head_ratio": 0.6,
         # Dropout 比例，防止过拟合
         "dropout": 0.1,
         # 池化方式：cls = 取 [CLS] 位置的向量；mean = 对所有 token 求平均
