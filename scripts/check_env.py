@@ -12,7 +12,7 @@
 用法
 ----
     python scripts/check_env.py
-
+q
 输出里的标记含义：
     [ OK ]   正常
     [WARN]   不致命，但建议处理（比如没 GPU 会跑得很慢）
