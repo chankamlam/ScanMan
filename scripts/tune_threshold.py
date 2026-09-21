@@ -104,8 +104,12 @@ def metrics_at(probs: np.ndarray, y: np.ndarray, t: float) -> dict:
             "f1": f1, "accuracy": acc, "tn": tn, "fp": fp, "fn": fn, "tp": tp}
 
 
+#: 细扫用的阈值网格。步长 0.005 —— 再细也没意义，概率本身的分辨率有限。
+FINE_GRID = tuple(float(t) for t in np.arange(0.01, 1.0, 0.005))
+
+
 def sweep(probs: np.ndarray, y: np.ndarray) -> list[dict]:
-    """扫一组常用阈值，返回指标列表。"""
+    """扫一组常用阈值，返回指标列表（给人看的粗表）。"""
     return [metrics_at(probs, y, t) for t in
             (0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10)]
 
@@ -124,13 +128,50 @@ def best_for_recall(probs: np.ndarray, y: np.ndarray, target: float) -> dict | N
     ----
     dict | None
         找到时返回该阈值下的指标字典，达不到目标返回 None。
+
+    适用场景
+    --------
+    **漏报比误报严重**的时候用这个：安全审计、漏洞挖掘 ——
+    宁可多看几个误报，也不能漏掉真漏洞。
     """
     best = None
-    for t in np.arange(0.01, 1.0, 0.005):
-        m = metrics_at(probs, y, float(t))
+    for t in FINE_GRID:
+        m = metrics_at(probs, y, t)
         if m["recall"] >= target and (best is None or m["precision"] > best["precision"]):
             best = m
     return best
+
+
+def best_for_f1(probs: np.ndarray, y: np.ndarray) -> dict:
+    """选 F1 最高的阈值。
+
+    和 ``best_for_recall`` 的区别
+    ----------------------------
+    后者把召回率当**硬约束**（"必须 >= 90%"），在满足约束的阈值里再挑精确率最高的；
+    这个则是让精确率和召回率**互相权衡** —— F1 是两者的调和平均。
+
+    **什么时候该用这个**：误报也要控制住的场景，比如扫描结果要给人看、
+    或者接进 CI 当门禁。把召回率硬拉到 90% 往往要让精确率掉到 1/4，
+    误报数量翻好几倍 —— 值不值得，取决于拿结果干什么。
+
+    实测例子（``outputs/merged_detection_codebert``，验证集 55,137 条）：
+
+        ==========  =========  ========  ======  ========
+        选择方式     阈值       precision  recall  FP
+        ==========  =========  ========  ======  ========
+        recall 0.9   0.245      0.219     0.902   16,930
+        **F1 最优**  **0.670**  **0.459** **0.592**  **3,681**
+        ==========  =========  ========  ======  ========
+
+    同样一份权重，阈值 0.245 时误报是 F1 最优时的 **4.6 倍**。
+
+    返回
+    ----
+    dict
+        指标字典（F1 最大者）。F1 全为 0 时返回阈值 0.5 那一档。
+    """
+    return max((metrics_at(probs, y, t) for t in FINE_GRID),
+               key=lambda m: m["f1"])
 
 
 def print_table(title: str, rows: list[dict]) -> None:
@@ -151,8 +192,11 @@ def main() -> None:
                         help="训练输出目录，例如 outputs/cvefixes_detection_6ep")
     parser.add_argument("--split", default="val", choices=["val", "test"],
                         help="在哪个集合上调阈值（默认 val，避免偷看测试集）")
+    parser.add_argument("--criterion", default="recall", choices=["recall", "f1"],
+                        help="选阈值的标准：recall=满足目标召回率的前提下精确率最高（默认，"
+                             "适合漏报比误报严重的场景）；f1=F1 最大（适合误报也要控的场景）")
     parser.add_argument("--target-recall", type=float, default=0.90,
-                        help="目标召回率，默认 0.90")
+                        help="仅在 --criterion recall 时生效：目标召回率，默认 0.90")
     parser.add_argument("--write", action="store_true",
                         help="把选出的阈值写进 <run>/best/threshold.json")
     args = parser.parse_args()
@@ -167,21 +211,37 @@ def main() -> None:
     print("=" * 62)
     print(f"运行目录   : {run_dir.name}")
     print(f"调参集合   : {args.split}  （{len(y)} 条，漏洞 {y.sum()} 条，占 {y.mean():.1%}）")
-    print(f"目标召回率 : {args.target_recall:.0%}")
+    if args.criterion == "recall":
+        print(f"选择标准   : 召回率 >= {args.target_recall:.0%} 的前提下精确率最高")
+    else:
+        print("选择标准   : F1 最大（精确率与召回率平衡）")
     print("=" * 62)
 
     print_table(f"【{args.split}】阈值扫描", sweep(probs, y))
 
-    best = best_for_recall(probs, y, args.target_recall)
-    if best is None:
-        print(f"\n❌ 在 {args.split} 上达不到 {args.target_recall:.0%} 的召回率。"
-              f"最高只能到 {metrics_at(probs, y, 0.01)['recall']:.4f}。")
-        print("   说明模型本身排不出来——需要更好的模型/更多数据，不能只靠调阈值。")
-        return
+    if args.criterion == "recall":
+        best = best_for_recall(probs, y, args.target_recall)
+        if best is None:
+            print(f"\n❌ 在 {args.split} 上达不到 {args.target_recall:.0%} 的召回率。"
+                  f"最高只能到 {metrics_at(probs, y, 0.01)['recall']:.4f}。")
+            print("   说明模型本身排不出来——需要更好的模型/更多数据，不能只靠调阈值。")
+            return
+        print(f"\n✅ 达到 {args.target_recall:.0%} 召回率的最优阈值 = {best['threshold']:.3f}")
+    else:
+        best = best_for_f1(probs, y)
+        print(f"\n✅ F1 最优的阈值 = {best['threshold']:.3f}")
 
-    print(f"\n✅ 达到 {args.target_recall:.0%} 召回率的最优阈值 = {best['threshold']:.3f}")
     print(f"   [{args.split}] recall={best['recall']:.4f}  precision={best['precision']:.4f}  "
           f"f1={best['f1']:.4f}  漏报={best['fn']}  误报={best['fp']}")
+
+    # ---- 顺手把另一种标准的代价也列出来，方便判断该选哪个 ----
+    alt = (best_for_f1(probs, y) if args.criterion == "recall"
+           else best_for_recall(probs, y, args.target_recall))
+    if alt is not None and alt["threshold"] != best["threshold"]:
+        print(f"   〔对比〕换成{'F1 最优' if args.criterion == 'recall' else '召回率优先'} "
+              f"阈值 {alt['threshold']:.3f}："
+              f"precision={alt['precision']:.4f} recall={alt['recall']:.4f} "
+              f"f1={alt['f1']:.4f} 误报={alt['fp']}")
 
     # ---- 关键：这个阈值搬到另一个集合上还成立吗 ----
     try:
@@ -202,7 +262,10 @@ def main() -> None:
     if args.write:
         out = {
             "threshold": best["threshold"],
-            "target_recall": args.target_recall,
+            # criterion 记下来：日后看到阈值时能知道它是按什么标准选的，
+            # 否则 0.245 和 0.670 摆在一起根本分不清哪个更合适
+            "criterion": args.criterion,
+            "target_recall": args.target_recall if args.criterion == "recall" else None,
             "tuned_on": args.split,
             "recall": best["recall"],
             "precision": best["precision"],
