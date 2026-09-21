@@ -1,0 +1,613 @@
+{
+  "schema_version": 1,
+  "tool": "scanman",
+  "generated_at": "2026-09-19T21:41:56+08:00",
+  "root": "D:\\Dev\\Projects\\ScanMan\\src",
+  "checkpoint": null,
+  "threshold": null,
+  "summary": {
+    "files_scanned": 7,
+    "files_skipped": 0,
+    "functions_total": 47,
+    "functions_suspicious": 0,
+    "languages": {
+      "python": 47
+    }
+  },
+  "skipped": [],
+  "files": [
+    {
+      "path": "__init__.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 1180,
+      "function_count": 0,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": []
+    },
+    {
+      "path": "config.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 9706,
+      "function_count": 4,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "_deep_merge",
+          "start_line": 148,
+          "end_line": 177,
+          "start_byte": 6052,
+          "end_byte": 7098,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "load_config",
+          "start_line": 180,
+          "end_line": 216,
+          "start_byte": 7104,
+          "end_byte": 8228,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "resolve_path",
+          "start_line": 219,
+          "end_line": 239,
+          "start_byte": 8234,
+          "end_byte": 8918,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "dump_config",
+          "start_line": 242,
+          "end_line": 261,
+          "start_byte": 8924,
+          "end_byte": 9704,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "data.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 8405,
+      "function_count": 7,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "__init__",
+          "start_line": 53,
+          "end_line": 63,
+          "start_byte": 1802,
+          "end_byte": 2127,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "__len__",
+          "start_line": 65,
+          "end_line": 67,
+          "start_byte": 2135,
+          "end_byte": 2285,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "__getitem__",
+          "start_line": 69,
+          "end_line": 118,
+          "start_byte": 2293,
+          "end_byte": 4132,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "__init__",
+          "start_line": 145,
+          "end_line": 147,
+          "start_byte": 5124,
+          "end_byte": 5288,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "__call__",
+          "start_line": 149,
+          "end_line": 185,
+          "start_byte": 5296,
+          "end_byte": 6775,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "load_jsonl_records",
+          "start_line": 188,
+          "end_line": 216,
+          "start_byte": 6781,
+          "end_byte": 7638,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "iter_batches",
+          "start_line": 219,
+          "end_line": 247,
+          "start_byte": 7644,
+          "end_byte": 8403,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "extract.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 26947,
+      "function_count": 17,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "to_dict",
+          "start_line": 224,
+          "end_line": 239,
+          "start_byte": 9164,
+          "end_byte": 9780,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_load_parser",
+          "start_line": 283,
+          "end_line": 316,
+          "start_byte": 11330,
+          "end_byte": 12449,
+          "node_type": "decorated_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_node_text",
+          "start_line": 324,
+          "end_line": 339,
+          "start_byte": 12627,
+          "end_byte": 13192,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_newline_offsets",
+          "start_line": 342,
+          "end_line": 363,
+          "start_byte": 13195,
+          "end_byte": 13858,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_line_of",
+          "start_line": 366,
+          "end_line": 391,
+          "start_byte": 13861,
+          "end_byte": 14790,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_collect_error_ranges",
+          "start_line": 394,
+          "end_line": 400,
+          "start_byte": 14793,
+          "end_byte": 15113,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_merge_ranges",
+          "start_line": 403,
+          "end_line": 428,
+          "start_byte": 15116,
+          "end_byte": 16005,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_overlaps_any",
+          "start_line": 431,
+          "end_line": 440,
+          "start_byte": 16008,
+          "end_byte": 16467,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_c_family_name",
+          "start_line": 443,
+          "end_line": 481,
+          "start_byte": 16470,
+          "end_byte": 18085,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_name_of",
+          "start_line": 484,
+          "end_line": 491,
+          "start_byte": 18088,
+          "end_byte": 18453,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_inner_function",
+          "start_line": 494,
+          "end_line": 507,
+          "start_byte": 18456,
+          "end_byte": 19132,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_walk",
+          "start_line": 510,
+          "end_line": 584,
+          "start_byte": 19135,
+          "end_byte": 22040,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "detect_language",
+          "start_line": 592,
+          "end_line": 605,
+          "start_byte": 22218,
+          "end_byte": 22601,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "supported_extensions",
+          "start_line": 608,
+          "end_line": 610,
+          "start_byte": 22604,
+          "end_byte": 22759,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_extract_from_source",
+          "start_line": 613,
+          "end_line": 644,
+          "start_byte": 22762,
+          "end_byte": 23782,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "extract_functions",
+          "start_line": 647,
+          "end_line": 684,
+          "start_byte": 23785,
+          "end_byte": 25193,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "extract_from_file",
+          "start_line": 687,
+          "end_line": 741,
+          "start_byte": 25196,
+          "end_byte": 26946,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "metrics.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 11185,
+      "function_count": 6,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "softmax",
+          "start_line": 49,
+          "end_line": 72,
+          "start_byte": 1921,
+          "end_byte": 2701,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "compute_binary_metrics",
+          "start_line": 75,
+          "end_line": 148,
+          "start_byte": 2707,
+          "end_byte": 6204,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "compute_multiclass_metrics",
+          "start_line": 151,
+          "end_line": 198,
+          "start_byte": 6210,
+          "end_byte": 8226,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "per_class_report",
+          "start_line": 201,
+          "end_line": 243,
+          "start_byte": 8232,
+          "end_byte": 9802,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "classification_report_text",
+          "start_line": 246,
+          "end_line": 272,
+          "start_byte": 9808,
+          "end_byte": 10558,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "format_metrics",
+          "start_line": 275,
+          "end_line": 298,
+          "start_byte": 10564,
+          "end_byte": 11183,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "models.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 11505,
+      "function_count": 6,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "__init__",
+          "start_line": 58,
+          "end_line": 96,
+          "start_byte": 2504,
+          "end_byte": 4290,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "_init_weights",
+          "start_line": 98,
+          "end_line": 115,
+          "start_byte": 4298,
+          "end_byte": 4882,
+          "node_type": "decorated_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "forward",
+          "start_line": 117,
+          "end_line": 186,
+          "start_byte": 4890,
+          "end_byte": 7990,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "build_tokenizer",
+          "start_line": 189,
+          "end_line": 207,
+          "start_byte": 7996,
+          "end_byte": 8564,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "count_parameters",
+          "start_line": 210,
+          "end_line": 231,
+          "start_byte": 8570,
+          "end_byte": 9285,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "get_parameter_groups",
+          "start_line": 234,
+          "end_line": 294,
+          "start_byte": 9291,
+          "end_byte": 11503,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    },
+    {
+      "path": "utils.py",
+      "language": "python",
+      "parse_ok": true,
+      "num_bytes": 8408,
+      "function_count": 7,
+      "suspicious_count": 0,
+      "functions_discarded": 0,
+      "functions": [
+        {
+          "name": "ensure_dir",
+          "start_line": 41,
+          "end_line": 62,
+          "start_byte": 1249,
+          "end_byte": 1933,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "set_seed",
+          "start_line": 65,
+          "end_line": 94,
+          "start_byte": 1939,
+          "end_byte": 3315,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "get_logger",
+          "start_line": 97,
+          "end_line": 137,
+          "start_byte": 3321,
+          "end_byte": 4780,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "truncate_code",
+          "start_line": 140,
+          "end_line": 183,
+          "start_byte": 4786,
+          "end_byte": 6551,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "read_jsonl",
+          "start_line": 186,
+          "end_line": 213,
+          "start_byte": 6557,
+          "end_byte": 7462,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "write_jsonl",
+          "start_line": 216,
+          "end_line": 242,
+          "start_byte": 7468,
+          "end_byte": 8199,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        },
+        {
+          "name": "human_int",
+          "start_line": 245,
+          "end_line": 253,
+          "start_byte": 8205,
+          "end_byte": 8406,
+          "node_type": "function_definition",
+          "language": "python",
+          "depth": 0,
+          "parent_name": null
+        }
+      ]
+    }
+  ]
+}

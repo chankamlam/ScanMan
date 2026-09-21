@@ -28,3 +28,27 @@ scikit-learn>=1.3
 pyyaml>=6.0
 requests>=2.31
 tqdm>=4.66
+
+# --- 函数抽取（src/extract.py）---
+# 版本**精确锁定**，不要随手升级：core 与各语言包的 ABI 必须配伍，
+# 下面这一组是本机 py312 实测通过的组合（core 0.26.0 = ABI 15，
+# 其中 c/cpp/php/typescript 是 ABI 14 的老包，python/javascript 是 ABI 15）。
+# 混装出问题时的表现是 import 就报 ABI 版本不符，或者解析结果诡异。
+tree-sitter==0.26.0
+tree-sitter-c==0.24.2
+tree-sitter-cpp==0.23.4
+tree-sitter-python==0.25.0
+tree-sitter-javascript==0.25.0
+tree-sitter-typescript==0.23.2
+tree-sitter-php==0.24.1
+
+# ⚠️ 已知绑定层缺陷（与本项目代码无关，但会咬人）：
+# 在 core 0.26.0 / python 0.25.0 这一代上读 Node.start_point.row 会
+# **非确定性段错误**（access violation：同样输入每轮崩的位置都不同）。
+# 实测 start_point 对象本身与 .column 都安全，只有 .row 会崩。
+# 因此 src/extract.py 一律用字节偏移推导行号，并有回归守卫
+# （tests/test_extract.py::test_no_point_api_usage）禁止再用 .row。
+
+# --- 测试 ---
+# 仓库第一套单元测试：python -m pytest tests/ -v
+pytest>=8.0

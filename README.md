@@ -26,6 +26,7 @@
 | [`docs/01_数据集与模型全解析.md`](docs/01_数据集与模型全解析.md) | 原始数据字段 → 清洗规则 → 模型输入 → 训练方式 → 推理输出，六问全解析 |
 | [`docs/02_模型运行完整流程与测试用例.md`](docs/02_模型运行完整流程与测试用例.md) | 9 步完整操作流程 + 测试用例 + 排错手册 + 验收清单 |
 | [`docs/03_项目交接与迁移指南.md`](docs/03_项目交接与迁移指南.md) | __要把项目同步给别人跑、或自己换电脑时看这份__：同步清单、验收步骤、必改的路径 |
+| [`docs/07_漏洞分类设计方案.md`](docs/07_漏洞分类设计方案.md) | __想数"每个文件里有几个函数有漏洞"、或要做 CWE 分类时看这份__（⚠️ 分类**仅设计未实现**） |
 | [`docs/check_all.bat`](docs/check_all.bat) | 一键跑完环境自检 → 单元测试 → 冒烟训练 → 批量推理（约 40 秒） |
 
 ### 当前完成状态
@@ -36,6 +37,8 @@
 | 统一格式训练数据 | ✅ 已生成 56 MB | `data/processed/cvefixes_*.jsonl`（检测 1.89 万 / 分类 7,291，见下节表格） |
 | CodeBERT 预训练权重 | ✅ 已下载 477 MB | `models/microsoft__codebert-base/` |
 | 完整代码流水线 | ✅ 已编写并验证 | `src/` + `scripts/` |
+| __项目级函数扫描__ | ✅ 已实现并验证 | `src/extract.py` + `scripts/scan_project.py`，46 项测试全绿 |
+| 漏洞分类（CWE） | ⚠️ **仅设计，未实现** | 方案见 `docs/07`；**没有任何可用的分类权重** |
 | 训练 → 评估 → 推理 | ✅ 已端到端跑通 | 冒烟测试产物见 `outputs/demo_detection/` |
 | 依赖环境 | ✅ 已装好隔离 venv | `C:\Users\awu70\.workbuddy\binaries\python\envs\vuln_bert` |
 
@@ -84,20 +87,32 @@ vuln_bert/
 │   ├── utils.py                   ← 种子、日志、头尾截断
 │   ├── models.py                  ← VulnClassifier（BERT + 分类头）
 │   ├── metrics.py                 ← 二分类/多分类指标
-│   └── datasets.py                ← Torch Dataset + 动态 padding
+│   ├── data.py                    ← Torch Dataset + 动态 padding
+│   │                                （⚠️ 不叫 datasets.py：会顶替第三方包，见 docs/06）
+│   └── extract.py                 ← 函数抽取（tree-sitter，4 语言族）
 ├── scripts/                       ← 可执行脚本
 │   ├── check_env.py               ← ① 环境自检
 │   ├── download_data.py           ← ② 下载数据集
 │   ├── download_model.py          ← ③ 下载预训练模型
 │   ├── build_dataset.py           ← ④ 构建统一训练数据
 │   ├── train.py                   ← ⑤ 微调训练
-│   └── predict.py                 ← ⑥ 推理
+│   ├── predict.py                 ← ⑥ 推理
+│   ├── evaluate.py                ← ⑦ 全套指标 + 阈值扫描
+│   ├── tune_threshold.py          ← ⑧ 按目标召回率调阈值
+│   ├── scan_project.py            ← ⑨ 扫整个项目：数出每个文件几个函数有漏洞
+│   └── spike_align.py             ← ⑩ 分布对齐 spike（碎片 vs 完整函数）
+├── tests/                         ← 单元测试（python -m pytest tests/ -v）
+│   ├── conftest.py
+│   └── test_extract.py            ← 46 项，含 tree-sitter .row 段错误的回归守卫
+├── docs/                          ← 全部文档（索引见 docs/README.md）
 ├── data/
 │   ├── raw/                       ← 原始数据（CVEfixes，已下载 1.1 GB）
 │   └── processed/                 ← 构建好的 JSONL（已生成 56 MB）
 ├── models/                        ← 预训练权重（CodeBERT 已下载 477 MB）
 └── outputs/
-    ├── README.md                  ← 产物说明
+    ├── scan_result.json           ← 扫描报告（纯抽取，未接推理）
+    ├── scan_src_inference.json    ← 扫描报告（接了推理，含误报实测）
+    ├── spike_align.json           ← 分布对齐实测数据
     └── demo_detection/            ← 冒烟测试产物（仅验证流程可跑通，非可用模型）
 ```
 
@@ -344,6 +359,30 @@ python scripts/train.py --model bert-base-uncased --run-name bert_base_detection
 ```
 
 所有 `outputs/*/results.json` 可直接横向比较。
+
+### 步骤 8｜扫描整个项目（数出每个文件有几个函数有漏洞）
+
+模型一次只对**一段代码**输出**一个**结论，所以"文件级/项目级判断"由外部聚合：
+**抽函数 → 逐函数推理 → 按文件统计**。这一步由 `scripts/scan_project.py` 完成。
+
+```bash
+# 只抽取、不推理（不需要模型权重，任何机器都能跑）
+python scripts/scan_project.py src/
+
+# 连推理一起做（需要检测模型权重）
+python scripts/scan_project.py . --checkpoint outputs/cvefixes_detection_6ep/best
+
+# 只要顶层函数、不把源码写进报告
+python scripts/scan_project.py . --checkpoint <ckpt> --outer-only --no-code
+```
+
+输出 `outputs/scan_result.json`，顶层是汇总（扫了多少文件/函数、几个可疑），
+每个文件下面是它的函数清单与逐个判定。
+
+> ⚠️ **别拿它直接当门禁**：现有检查点在真实项目代码上**误报率不低**
+> —— 扫本仓库自己的 `src/`，47 个纯函数里有 15 个被判可疑（31.9%）。
+> 实测数据见 [`docs/07` 6.5](docs/07_漏洞分类设计方案.md)。
+> 支持的语言：C/C++、Python、JS/TS、PHP（其它语言留注册表扩展）。
 
 ---
 

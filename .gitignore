@@ -8,10 +8,27 @@
 # ---------- Python ----------
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
+.eggs/
+build/
+dist/
 .venv/
 venv/
+env/
+
+# ---------- 测试与质量工具的缓存 ----------
+# 都是工具自己生成的中间文件，删掉随时能重新跑出来
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---------- Jupyter ----------
+# 误在仓库里开 notebook 时产生的检查点副本
+.ipynb_checkpoints/
 
 # ---------- IDE ----------
 # PyCharm / VSCode 的配置里写的是本机绝对路径，换机器就没用了
@@ -19,12 +36,20 @@ venv/
 .vscode/
 *.iml
 *.swp
+*.swo
+*~
+
+# ---------- 本地私有配置 / 密钥 ----------
+# API key、HF token 之类只放在本机，绝不进版本库
+.env
+.env.*
+# Claude Code 的本机授权记录，含本机绝对路径
+.claude/settings.local.json
 
 # ---------- 云同步工具 ----------
 # Dropbox 会在被同步的目录里建 .sync/ 存元数据，不属于项目内容
 .sync/
 *.dropbox
-desktop.ini
 
 # ---------- 数据集（约 4 GB）----------
 # 用 scripts/download_data.py 重新下载，
@@ -36,10 +61,32 @@ data/processed/
 # 用 scripts/download_model.py 重新下载
 models/
 
-# ---------- 训练产物（每个检查点约 475 MB）----------
-# 只忽略大文件；results.json 之类的小文件如果要留档可以手动放开
-outputs/*/best/pytorch_model.bin
+# ---------- 训练产物 ----------
+# 只忽略大文件；config.yaml / results.json / report_*.txt / *.npy / label_map.json
+# 这些小文件要留档，方便复现实验和事后分析（见 docs/05_训练产物说明.md）。
+# outputs/ 根目录下的扫描报告（scan_result.json 等）也只有几十 KB，可以提交。
+outputs/*/best/*.bin
+outputs/*/best/*.safetensors
 outputs/*/*.npy
+# 中间检查点（改回 HF Trainer 的 save_strategy 时会出现），每个约 500 MB
+outputs/*/checkpoint-*/
+
+# ---------- 模型权重与训练状态（兜底）----------
+# 上面按目录忽略，这里按扩展名兜底，防止换了输出路径就漏进仓库
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# ---------- 日志 ----------
+*.log
+logs/
+# 训练监控（本项目当前没接，接了之后别把 run 目录提交上去）
+wandb/
+lightning_logs/
+mlruns/
 
 # ---------- 系统 ----------
 .DS_Store
