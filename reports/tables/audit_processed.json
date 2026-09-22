@@ -1,0 +1,203 @@
+{
+  "detection": {
+    "train": {
+      "n": 15147,
+      "pos": 6746,
+      "pos_rate": 0.4453687198785238,
+      "groups": 8526
+    },
+    "val": {
+      "n": 1876,
+      "pos": 821,
+      "pos_rate": 0.43763326226012794,
+      "groups": 1065
+    },
+    "test": {
+      "n": 1902,
+      "pos": 853,
+      "pos_rate": 0.44847528916929547,
+      "groups": 1067
+    }
+  },
+  "classification": {
+    "train": {
+      "n": 5832,
+      "classes": 41,
+      "other": 1094,
+      "min_nonzero": 32,
+      "max": 1103
+    },
+    "val": {
+      "n": 729,
+      "classes": 41,
+      "other": 147,
+      "min_nonzero": 2,
+      "max": 147
+    },
+    "test": {
+      "n": 730,
+      "classes": 41,
+      "other": 141,
+      "min_nonzero": 1,
+      "max": 141
+    }
+  },
+  "leakage": {
+    "group_t_v": 0,
+    "group_t_te": 0,
+    "group_v_te": 0,
+    "md5_t_te": 0,
+    "md5_t_v": 0,
+    "nows_t_te": 3
+  },
+  "label_conflict": 8,
+  "test_structure": {
+    "groups": 1067,
+    "paired_groups": 835,
+    "paired_samples": 1670,
+    "n_test": 1902,
+    "isolated_samples": 232,
+    "isolated_pos_rate": 0.07758620689655173
+  },
+  "over_window": {
+    "train": {
+      "n": 15147,
+      "median": 384,
+      "over": 2933,
+      "rate": 0.193635703439625
+    },
+    "val": {
+      "n": 1876,
+      "median": 404,
+      "over": 372,
+      "rate": 0.19829424307036247
+    },
+    "test": {
+      "n": 1902,
+      "median": 409,
+      "over": 375,
+      "rate": 0.1971608832807571
+    }
+  },
+  "class_longtail": {
+    "num_labels": 41,
+    "other_train": 1094,
+    "other_rate": 0.18758573388203018,
+    "max_class_train": 1103,
+    "min_nonzero_test": 1,
+    "suport_lt10_classes": 23,
+    "suport_ge20_classes": 11
+  },
+  "languages_processed": [
+    [
+      "C",
+      4145
+    ],
+    [
+      "PHP",
+      3142
+    ],
+    [
+      "Other",
+      1557
+    ],
+    [
+      "JavaScript",
+      1189
+    ],
+    [
+      "Python",
+      1168
+    ],
+    [
+      "C++",
+      812
+    ],
+    [
+      "Java",
+      647
+    ],
+    [
+      "Go",
+      551
+    ],
+    [
+      "Ruby",
+      506
+    ],
+    [
+      "TypeScript",
+      343
+    ],
+    [
+      "JSON",
+      167
+    ],
+    [
+      "XML",
+      143
+    ],
+    [
+      "Rust",
+      129
+    ],
+    [
+      "C#",
+      118
+    ],
+    [
+      "Markdown",
+      112
+    ],
+    [
+      "HTML",
+      85
+    ],
+    [
+      "Perl",
+      71
+    ],
+    [
+      "YAML",
+      61
+    ],
+    [
+      "Kotlin",
+      45
+    ],
+    [
+      "Shell",
+      29
+    ],
+    [
+      "Objective-C",
+      28
+    ],
+    [
+      "Swift",
+      28
+    ],
+    [
+      "Scala",
+      19
+    ],
+    [
+      "Lua",
+      17
+    ],
+    [
+      "SQL",
+      16
+    ],
+    [
+      "CSS",
+      13
+    ],
+    [
+      "Unknown",
+      6
+    ]
+  ],
+  "n_projects_processed": 3116,
+  "stats_consistent": true
+}

@@ -1,0 +1,362 @@
+{
+  "n_records": 12987,
+  "n_files": 3,
+  "missing": {
+    "cve_id": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "hash": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "repo_url": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "cwe_id": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "cwe_name": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "language": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "vulnerable_code": {
+      "null": 0,
+      "empty_str": 2911,
+      "nan_str": 0
+    },
+    "fixed_code": {
+      "null": 0,
+      "empty_str": 1024,
+      "nan_str": 0
+    },
+    "commit_message": {
+      "null": 0,
+      "empty_str": 8,
+      "nan_str": 0
+    },
+    "cve_description": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "severity": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 4799
+    },
+    "cvss3_base_score": {
+      "null": 1978,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "commit_date": {
+      "null": 0,
+      "empty_str": 0,
+      "nan_str": 0
+    },
+    "file_paths": {
+      "null": 0,
+      "empty_str": 937,
+      "nan_str": 0
+    }
+  },
+  "n_unique_cve": 11726,
+  "n_unique_hash": 11859,
+  "dup_cve_id": 1261,
+  "dup_hash": 1128,
+  "top_cve_multi": [
+    [
+      "CVE-2024-22194",
+      22
+    ],
+    [
+      "CVE-2020-15211",
+      12
+    ],
+    [
+      "CVE-2020-26230",
+      10
+    ],
+    [
+      "CVE-2012-4396",
+      9
+    ],
+    [
+      "CVE-2022-22984",
+      8
+    ]
+  ],
+  "languages": [
+    [
+      "C",
+      3496
+    ],
+    [
+      "PHP",
+      2431
+    ],
+    [
+      "Other",
+      1205
+    ],
+    [
+      "Unknown",
+      937
+    ],
+    [
+      "Python",
+      920
+    ],
+    [
+      "JavaScript",
+      883
+    ],
+    [
+      "C++",
+      741
+    ],
+    [
+      "Java",
+      467
+    ],
+    [
+      "Go",
+      452
+    ],
+    [
+      "Ruby",
+      379
+    ],
+    [
+      "TypeScript",
+      262
+    ],
+    [
+      "JSON",
+      124
+    ],
+    [
+      "XML",
+      100
+    ],
+    [
+      "Markdown",
+      99
+    ],
+    [
+      "Rust",
+      92
+    ],
+    [
+      "C#",
+      91
+    ],
+    [
+      "HTML",
+      68
+    ],
+    [
+      "Perl",
+      56
+    ],
+    [
+      "YAML",
+      51
+    ],
+    [
+      "Kotlin",
+      28
+    ],
+    [
+      "Shell",
+      21
+    ],
+    [
+      "Objective-C",
+      21
+    ],
+    [
+      "Swift",
+      21
+    ],
+    [
+      "Scala",
+      14
+    ],
+    [
+      "Lua",
+      10
+    ],
+    [
+      "SQL",
+      9
+    ],
+    [
+      "CSS",
+      9
+    ]
+  ],
+  "n_projects": 4038,
+  "top_projects": [
+    [
+      "linux",
+      1139
+    ],
+    [
+      "tensorflow",
+      490
+    ],
+    [
+      "ImageMagick",
+      197
+    ],
+    [
+      "vim",
+      168
+    ],
+    [
+      "xwiki-platform",
+      158
+    ],
+    [
+      "gpac",
+      142
+    ],
+    [
+      "radare2",
+      112
+    ],
+    [
+      "tcpdump",
+      104
+    ],
+    [
+      "FFmpeg",
+      103
+    ],
+    [
+      "MISP",
+      100
+    ]
+  ],
+  "cwe_top": [
+    [
+      "CWE-79",
+      1878
+    ],
+    [
+      "NVD-CWE-noinfo",
+      1293
+    ],
+    [
+      "CWE-125",
+      604
+    ],
+    [
+      "CWE-787",
+      491
+    ],
+    [
+      "CWE-20",
+      432
+    ],
+    [
+      "CWE-89",
+      429
+    ],
+    [
+      "CWE-22",
+      409
+    ],
+    [
+      "CWE-119",
+      398
+    ],
+    [
+      "CWE-476",
+      385
+    ],
+    [
+      "NVD-CWE-Other",
+      323
+    ],
+    [
+      "CWE-200",
+      316
+    ],
+    [
+      "CWE-416",
+      271
+    ],
+    [
+      "CWE-352",
+      256
+    ],
+    [
+      "CWE-190",
+      246
+    ],
+    [
+      "CWE-78",
+      166
+    ]
+  ],
+  "n_cwe_raw": 269,
+  "code_pair": {
+    "both": 9983,
+    "only_vuln": 93,
+    "only_fixed": 1980,
+    "empty_both": 931,
+    "identical": 38
+  },
+  "len_vuln": {
+    "median": 239,
+    "p90": 3060,
+    "p99": 213452,
+    "max": 55330596,
+    "over_20k": 282,
+    "over_512tok": 1388,
+    "n": 9983
+  },
+  "len_fixed": {
+    "median": 672,
+    "p90": 6965,
+    "p99": 284538,
+    "max": 55327656,
+    "over_20k": 420,
+    "over_512tok": 2751,
+    "n": 9983
+  },
+  "severity_values": [
+    [
+      "MEDIUM",
+      5413
+    ],
+    [
+      "nan",
+      4799
+    ],
+    [
+      "HIGH",
+      1715
+    ],
+    [
+      "LOW",
+      1060
+    ]
+  ],
+  "invalid_cvss3": 0
+}
